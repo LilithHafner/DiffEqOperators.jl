@@ -36,7 +36,7 @@ end
     lb = zeros(n)
     ub = 300.0 .* ones(n) # a reasonable guess?
     options(convergence_tolerance = 1e-14, output = :no,
-            time_limit = 600) # 10 minute budget
+        time_limit = 600) # 10 minute budget
     exit_code, sol_z, sol_g = @suppress solveLCP(g, lb, ub)
     # tests
     @test exit_code == :StationaryPointFound
@@ -58,7 +58,7 @@ end
     lb = zeros(n)
     ub = 300 * ones(n) # a reasonable guess?
     options(convergence_tolerance = 1e-12, output = :no,
-            time_limit = 600) # 10 minute budget
+        time_limit = 600) # 10 minute budget
     exit_code, sol_z, sol_f = @suppress solveLCP(f, lb, ub)
 
     # tests

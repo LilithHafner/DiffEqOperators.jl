@@ -128,9 +128,9 @@ function BandedMatrices.BandedMatrix(A::DerivativeOperator{T}, N::Int = A.len) w
 end
 
 function Base.convert(::Type{Mat},
-                      A::DerivativeOperator) where {
-                                                    Mat <: Union{Array, SparseMatrixCSC,
-                                                          BandedMatrix}}
+        A::DerivativeOperator) where {
+        Mat <: Union{Array, SparseMatrixCSC,
+        BandedMatrix}}
     Mat(A)
 end
 
@@ -140,8 +140,9 @@ Base.convert(::Type{AbstractMatrix}, A::DerivativeOperator) = BandedMatrix(A)
 # Boundary Padded Array concretizations
 ################################################################################
 
-function LinearAlgebra.Array(Q::BoundaryPaddedArray{T, D, N, M, V, B}) where {T, D, N, M, V,
-                                                                              B}
+function LinearAlgebra.Array(Q::BoundaryPaddedArray{
+        T, D, N, M, V, B}) where {T, D, N, M, V,
+        B}
     S = size(Q)
     out = zeros(T, S...)
     dim = D
@@ -154,8 +155,9 @@ function LinearAlgebra.Array(Q::BoundaryPaddedArray{T, D, N, M, V, B}) where {T,
     return out
 end
 
-function LinearAlgebra.Array(Q::ComposedBoundaryPaddedArray{T, N, M, V, B}) where {T, N, M,
-                                                                                   V, B}
+function LinearAlgebra.Array(Q::ComposedBoundaryPaddedArray{
+        T, N, M, V, B}) where {T, N, M,
+        V, B}
     S = size(Q)
     out = zeros(T, S...)
     dimset = 1:N
@@ -239,8 +241,10 @@ function SparseArrays.sparse(Q::AffineBC{T}, N::Int) where {T}
 end
 
 function LinearAlgebra.Array(Q::PeriodicBC{T}, N::Int) where {T}
-    (Array([transpose(zeros(T, N - 1)) one(T); Diagonal(ones(T, N));
-            one(T) transpose(zeros(T, N - 1))]), zeros(T, N + 2))
+    (
+        Array([transpose(zeros(T, N - 1)) one(T); Diagonal(ones(T, N));
+               one(T) transpose(zeros(T, N - 1))]),
+        zeros(T, N + 2))
 end
 function SparseArrays.SparseMatrixCSC(Q::PeriodicBC{T}, N::Int) where {T}
     Q_l = spzeros(T, N + 2, N)
@@ -284,7 +288,7 @@ function _concretize(Q::AbstractArray{T, N}, M) where {T, N}
 end
 
 function LinearAlgebra.Array(Q::MultiDimDirectionalBC{T, B, D, N, L},
-                             s::NTuple{N, G}) where {T, B, D, N, L, G <: Int}
+        s::NTuple{N, G}) where {T, B, D, N, L, G <: Int}
     @assert size(Q.BCs)==perpindex(s, D) "The size of the BC array in Q, $(size(Q.BCs)) is incompatible with s, $s"
     blip = zeros(Int64, N)
     blip[D] = 2
@@ -327,7 +331,7 @@ end
 This is confusing, but it does work.
 """
 function LinearAlgebra.Array(Q::ComposedMultiDimBC{T, B, N, M},
-                             s::NTuple{N, G}) where {T, B, N, M, G <: Int}
+        s::NTuple{N, G}) where {T, B, N, M, G <: Int}
     for d in 1:N
         @assert size(Q.BCs[d])==perpindex(s, d) "The size of the BC array in Q along dimension $d, $(size(Q.BCs[d])) is incompatible with s, $s"
     end
@@ -374,7 +378,7 @@ end
 See comments on the `Array` method for this type for an idea of what is going on.
 """
 function SparseArrays.SparseMatrixCSC(Q::MultiDimDirectionalBC{T, B, D, N, L},
-                                      s::NTuple{N, G}) where {T, B, D, N, L, G <: Int}
+        s::NTuple{N, G}) where {T, B, D, N, L, G <: Int}
     @assert size(Q.BCs)==perpindex(s, D) "The size of the BC array in Q, $(size(Q.BCs)) is incompatible with s, $s"
     blip = zeros(Int64, N)
     blip[D] = 2
@@ -414,7 +418,7 @@ function SparseArrays.SparseMatrixCSC(Q::MultiDimDirectionalBC{T, B, D, N, L},
 end
 
 function SparseArrays.SparseMatrixCSC(Q::ComposedMultiDimBC{T, B, N, M},
-                                      s::NTuple{N, G}) where {T, B, N, M, G <: Int}
+        s::NTuple{N, G}) where {T, B, N, M, G <: Int}
     for d in 1:N
         @assert size(Q.BCs[d])==perpindex(s, d) "The size of the BC array in Q along dimension $d, $(size(Q.BCs[d])) is incompatible with s, $s"
     end
@@ -529,7 +533,7 @@ function BandedMatrices.BandedMatrix(A::DerivativeOperator{T, N}, Mshape) where 
 end
 
 function BlockBandedMatrices.BandedBlockBandedMatrix(A::DerivativeOperator{T, N},
-                                                     Mshape) where {T, N}
+        Mshape) where {T, N}
     # Case where A is not differentiating along the first dimension
     if N != 1
         n = prod(Mshape[1:(N - 1)])
@@ -554,7 +558,7 @@ end
 # Array Concretizations
 # Uniform grid case
 function LinearAlgebra.Array(A::DerivativeOperator{T, N, true},
-                             len::Int = A.len) where {T, N}
+        len::Int = A.len) where {T, N}
     L = zeros(T, len, len + 2)
     bpc = A.boundary_point_count
     stl = A.stencil_length
@@ -617,7 +621,7 @@ end
 
 # Non-uniform grid case
 function LinearAlgebra.Array(A::DerivativeOperator{T, N, true, M},
-                             len::Int = A.len) where {T, N, M <: AbstractArray{T}}
+        len::Int = A.len) where {T, N, M <: AbstractArray{T}}
     L = zeros(T, len, len + 2)
     bpc = A.boundary_point_count
     stl = A.stencil_length
@@ -655,16 +659,16 @@ function LinearAlgebra.Array(A::DerivativeOperator{T, N, true, M},
         if cur_coeff < 0 && i <= len - offside
             L[i, (i - stl + 2 + offside):(i + 1 + offside)] = cur_coeff *
                                                               A.high_boundary_coefs[2,
-                                                                                    i - len + bpc + offside]
+                i - len + bpc + offside]
         elseif cur_coeff < 0
             L[i, (len - stl + 3):(len + 2)] = cur_coeff * A.high_boundary_coefs[2,
-                                                                    i - len + bpc + offside]
+                i - len + bpc + offside]
         elseif cur_coeff >= 0 && i <= len - bpc
             L[i, (i - bstl + 2 + offside):(i + 1 + offside)] = cur_coeff *
                                                                A.stencil_coefs[1, i - bpc]
         else
             L[i, (len - bstl + 3):(len + 2)] = cur_coeff * A.high_boundary_coefs[1,
-                                                                     i - len + bpc + offside]
+                i - len + bpc + offside]
         end
     end
     return L
@@ -673,7 +677,7 @@ end
 # Sparse Concretizations
 # Uniform grid case
 function SparseArrays.SparseMatrixCSC(A::DerivativeOperator{T, N, true},
-                                      len::Int = A.len) where {T, N}
+        len::Int = A.len) where {T, N}
     L = spzeros(T, len, len + 2)
     bpc = A.boundary_point_count
     stl = A.stencil_length
@@ -736,7 +740,7 @@ end
 
 # Non-uniform grid case
 function SparseArrays.SparseMatrixCSC(A::DerivativeOperator{T, N, true, M},
-                                      len::Int = A.len) where {T, N, M <: AbstractArray{T}}
+        len::Int = A.len) where {T, N, M <: AbstractArray{T}}
     L = spzeros(T, len, len + 2)
     bpc = A.boundary_point_count
     stl = A.stencil_length
@@ -774,16 +778,16 @@ function SparseArrays.SparseMatrixCSC(A::DerivativeOperator{T, N, true, M},
         if cur_coeff < 0 && i <= len - offside
             L[i, (i - stl + 2 + offside):(i + 1 + offside)] = cur_coeff *
                                                               A.high_boundary_coefs[2,
-                                                                                    i - len + bpc + offside]
+                i - len + bpc + offside]
         elseif cur_coeff < 0
             L[i, (len - stl + 3):(len + 2)] = cur_coeff * A.high_boundary_coefs[2,
-                                                                    i - len + bpc + offside]
+                i - len + bpc + offside]
         elseif cur_coeff >= 0 && i <= len - bpc
             L[i, (i - bstl + 2 + offside):(i + 1 + offside)] = cur_coeff *
                                                                A.stencil_coefs[1, i - bpc]
         else
             L[i, (len - bstl + 3):(len + 2)] = cur_coeff * A.high_boundary_coefs[1,
-                                                                     i - len + bpc + offside]
+                i - len + bpc + offside]
         end
     end
     return L
@@ -792,7 +796,7 @@ end
 # Banded Concretizations
 # Uniform grid case
 function BandedMatrices.BandedMatrix(A::DerivativeOperator{T, N, true},
-                                     len::Int = A.len) where {T, N}
+        len::Int = A.len) where {T, N}
     bpc = A.boundary_point_count
     stl = A.stencil_length
     bstl = A.boundary_stencil_length
@@ -856,7 +860,7 @@ end
 
 # Non-uniform grid case
 function BandedMatrices.BandedMatrix(A::DerivativeOperator{T, N, true, M},
-                                     len::Int = A.len) where {T, N, M <: AbstractArray{T}}
+        len::Int = A.len) where {T, N, M <: AbstractArray{T}}
     bpc = A.boundary_point_count
     stl = A.stencil_length
     bstl = A.boundary_stencil_length
@@ -894,16 +898,16 @@ function BandedMatrices.BandedMatrix(A::DerivativeOperator{T, N, true, M},
         if cur_coeff < 0 && i <= len - offside
             L[i, (i - stl + 2 + offside):(i + 1 + offside)] = cur_coeff *
                                                               A.high_boundary_coefs[2,
-                                                                                    i - len + bpc + offside]
+                i - len + bpc + offside]
         elseif cur_coeff < 0
             L[i, (len - stl + 3):(len + 2)] = cur_coeff * A.high_boundary_coefs[2,
-                                                                    i - len + bpc + offside]
+                i - len + bpc + offside]
         elseif cur_coeff >= 0 && i <= len - bpc
             L[i, (i - bstl + 2 + offside):(i + 1 + offside)] = cur_coeff *
                                                                A.stencil_coefs[1, i - bpc]
         else
             L[i, (len - bstl + 3):(len + 2)] = cur_coeff * A.high_boundary_coefs[1,
-                                                                     i - len + bpc + offside]
+                i - len + bpc + offside]
         end
     end
     return L
@@ -912,48 +916,48 @@ end
 # GhostDerivativeOperator Concretizations
 ################################################################################
 function LinearAlgebra.Array(A::GhostDerivativeOperator{T, E, F},
-                             N::Int = A.L.len) where {T, E, F}
+        N::Int = A.L.len) where {T, E, F}
     Q_l, Q_b = Array(A.Q, N)
     return (Array(A.L, N) * Q_l, Array(A.L, N) * Q_b)
 end
 
 function LinearAlgebra.Array(A::GhostDerivativeOperator{T, E, F},
-                             s::NTuple{N, I}) where {T, E, F, N, I <: Int}
+        s::NTuple{N, I}) where {T, E, F, N, I <: Int}
     Q_l, Q_b = Array(A.Q, s)
     return (Array(A.L, s) * Q_l, Array(A.L, s) * Q_b)
 end
 
 function BandedMatrices.BandedMatrix(A::GhostDerivativeOperator{T, E, F},
-                                     N::Int = A.L.len) where {T, E, F}
+        N::Int = A.L.len) where {T, E, F}
     Q_l, Q_b = BandedMatrix(A.Q, N)
     return (BandedMatrix(A.L, N) * Q_l, BandedMatrix(A.L, N) * Q_b)
 end
 
 function BandedMatrices.BandedMatrix(A::GhostDerivativeOperator{T, E, F},
-                                     s::NTuple{N, I}) where {T, E, F, N, I <: Int}
+        s::NTuple{N, I}) where {T, E, F, N, I <: Int}
     Q_l, Q_b = BandedMatrix(A.Q, s)
     return (BandedMatrix(A.L, s) * Q_l, BandedMatrix(A.L, s) * Q_b)
 end
 
 function SparseArrays.SparseMatrixCSC(A::GhostDerivativeOperator{T, E, F},
-                                      N::Int = A.L.len) where {T, E, F}
+        N::Int = A.L.len) where {T, E, F}
     Q_l, Q_b = SparseMatrixCSC(A.Q, N)
     return (SparseMatrixCSC(A.L, N) * Q_l, SparseMatrixCSC(A.L, N) * Q_b)
 end
 
 function SparseArrays.SparseMatrixCSC(A::GhostDerivativeOperator{T, E, F},
-                                      s::NTuple{N, I}) where {T, E, F, N, I <: Int}
+        s::NTuple{N, I}) where {T, E, F, N, I <: Int}
     Q_l, Q_b = SparseMatrixCSC(A.Q, s)
     return (SparseMatrixCSC(A.L, s) * Q_l, SparseMatrixCSC(A.L, s) * Q_b)
 end
 
 function SparseArrays.sparse(A::GhostDerivativeOperator{T, E, F},
-                             N::Int = A.L.len) where {T, E, F}
+        N::Int = A.L.len) where {T, E, F}
     return SparseMatrixCSC(A, N)
 end
 
 function SparseArrays.sparse(A::GhostDerivativeOperator{T, E, F},
-                             s::NTuple{N, I}) where {T, E, F, N, I}
+        s::NTuple{N, I}) where {T, E, F, N, I}
     return SparseMatrixCSC(A, s)
 end
 

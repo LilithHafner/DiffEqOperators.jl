@@ -38,8 +38,8 @@ struct RobinBC{T, V <: AbstractVector{T}} <: AffineBC{T}
         return new{T, typeof(a_l)}(a_l, b_l, a_r, b_r)
     end
     function RobinBC(l::Union{NTuple{3, T}, AbstractVector{T}},
-                     r::Union{NTuple{3, T}, AbstractVector{T}}, dx::AbstractVector{T},
-                     order = 1) where {T}
+            r::Union{NTuple{3, T}, AbstractVector{T}}, dx::AbstractVector{T},
+            order = 1) where {T}
         αl, βl, γl = l
         αr, βr, γr = r
 
@@ -62,7 +62,7 @@ end
 
 function stencil(q::AffineBC{T}, N::Int) where {T}
     ([transpose(q.a_l) transpose(zeros(T, N - length(q.a_l)))],
-     [transpose(zeros(T, N - length(q.a_r))) transpose(q.a_r)])
+        [transpose(zeros(T, N - length(q.a_r))) transpose(q.a_r)])
 end
 affine(q::AffineBC) = (q.b_l, q.b_r)
 
@@ -88,7 +88,7 @@ struct GeneralBC{T, L <: AbstractVector{T}, R <: AbstractVector{T}} <: AffineBC{
     a_r::R
     b_r::T
     function GeneralBC(αl::AbstractVector{T}, αr::AbstractVector{T}, dx::T,
-                       order = 1) where {T}
+            order = 1) where {T}
         nl = length(αl)
         nr = length(αr)
         S_l = zeros(T, (nl - 2, order + nl - 2))
@@ -96,19 +96,19 @@ struct GeneralBC{T, L <: AbstractVector{T}, R <: AbstractVector{T}} <: AffineBC{
 
         for i in 1:(nl - 2)
             S_l[i, :] = [transpose(calculate_weights(i, one(T),
-                                                     Array(one(T):convert(T, order + i)))) transpose(zeros(T,
-                                                                                                           Int(nl -
-                                                                                                               2 -
-                                                                                                               i)))] ./
+                Array(one(T):convert(T, order + i)))) transpose(zeros(T,
+                Int(nl -
+                    2 -
+                    i)))] ./
                         (dx^i) #am unsure if the length of the dummy_x is correct here
         end
 
         for i in 1:(nr - 2)
             S_r[i, :] = [transpose(calculate_weights(i, convert(T, order + i),
-                                                     Array(one(T):convert(T, order + i)))) transpose(zeros(T,
-                                                                                                           Int(nr -
-                                                                                                               2 -
-                                                                                                               i)))] ./
+                Array(one(T):convert(T, order + i)))) transpose(zeros(T,
+                Int(nr -
+                    2 -
+                    i)))] ./
                         (dx^i)
         end
         s0_l = S_l[:, 1]
@@ -128,7 +128,7 @@ struct GeneralBC{T, L <: AbstractVector{T}, R <: AbstractVector{T}} <: AffineBC{
     end
 
     function GeneralBC(αl::AbstractVector{T}, αr::AbstractVector{T}, dx::AbstractVector{T},
-                       order = 1) where {T}
+            order = 1) where {T}
         nl = length(αl)
         nr = length(αr)
         dx_l, dx_r = (dx[1:(order + nl - 2)], reverse(dx[(end - order - nr + 3):end]))
@@ -137,19 +137,19 @@ struct GeneralBC{T, L <: AbstractVector{T}, R <: AbstractVector{T}} <: AffineBC{
 
         for i in 1:(nl - 2)
             S_l[i, :] = [transpose(calculate_weights(i, one(T),
-                                                     Array(one(T):convert(T, order + i)))) transpose(zeros(T,
-                                                                                                           Int(nl -
-                                                                                                               2 -
-                                                                                                               i)))] ./
+                Array(one(T):convert(T, order + i)))) transpose(zeros(T,
+                Int(nl -
+                    2 -
+                    i)))] ./
                         transpose(dx_l .^ i)
         end
 
         for i in 1:(nr - 2)
             S_r[i, :] = [transpose(calculate_weights(i, convert(T, order + i),
-                                                     Array(one(T):convert(T, order + i)))) transpose(zeros(T,
-                                                                                                           Int(nr -
-                                                                                                               2 -
-                                                                                                               i)))] ./
+                Array(one(T):convert(T, order + i)))) transpose(zeros(T,
+                Int(nr -
+                    2 -
+                    i)))] ./
                         transpose(dx_r .^ i)
         end
         s0_l = S_l[:, 1]
@@ -187,7 +187,7 @@ end
 
 function Base.:*(Q::AffineBC, u::AbstractVector)
     BoundaryPaddedVector(Q.a_l ⋅ u[1:length(Q.a_l)] + Q.b_l,
-                         Q.a_r ⋅ u[(end - length(Q.a_r) + 1):end] + Q.b_r, u)
+        Q.a_r ⋅ u[(end - length(Q.a_r) + 1):end] + Q.b_r, u)
 end
 Base.:*(Q::PeriodicBC, u::AbstractVector) = BoundaryPaddedVector(u[end], u[1], u)
 

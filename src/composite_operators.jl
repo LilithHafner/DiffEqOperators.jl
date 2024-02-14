@@ -13,7 +13,7 @@ sparse1(A::DiffEqScaledOperator) = A.coeff * sparse1(A.op)
 
 # Linear Combination
 struct DiffEqOperatorCombination{T, O <: Tuple{Vararg{AbstractDiffEqLinearOperator{T}}},
-                                 C <: AbstractVector{T}} <:
+    C <: AbstractVector{T}} <:
        AbstractDiffEqCompositeOperator{T}
     ops::O
     cache::C
@@ -84,7 +84,7 @@ end
 
 # Composition (A ∘ B)
 struct DiffEqOperatorComposition{T, O <: Tuple{Vararg{AbstractDiffEqLinearOperator{T}}},
-                                 C <: Tuple{Vararg{AbstractVector{T}}}} <:
+    C <: Tuple{Vararg{AbstractVector{T}}}} <:
        AbstractDiffEqCompositeOperator{T}
     ops::O # stored in the order of application
     caches::C
@@ -205,7 +205,7 @@ function ldiv!(y::AbstractVector, L::DiffEqOperatorComposition, b::AbstractVecto
 end
 factorize(L::DiffEqOperatorComposition) = prod(factorize, reverse(L.ops))
 for fact in (:lu, :lu!, :qr, :qr!, :cholesky, :cholesky!, :ldlt, :ldlt!,
-             :bunchkaufman, :bunchkaufman!, :lq, :lq!, :svd, :svd!)
+    :bunchkaufman, :bunchkaufman!, :lq, :lq!, :svd, :svd!)
     @eval function LinearAlgebra.$fact(L::DiffEqOperatorComposition, args...)
         prod(op -> $fact(op, args...), reverse(L.ops))
     end

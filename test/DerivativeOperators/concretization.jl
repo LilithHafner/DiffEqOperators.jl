@@ -372,10 +372,11 @@ end
     bc1 = Dirichlet0BC(Float64)
     bc2 = DirichletBC(0.0, 0.0)
     bc3 = NeumannBC((deriv_start, deriv_end), 1.0, 1)
-    bc4 = RobinBC((params[1], -params[2], left_RBC), (params[1], params[2], right_RBC), 1.0,
-                  1)
+    bc4 = RobinBC(
+        (params[1], -params[2], left_RBC), (params[1], params[2], right_RBC), 1.0,
+        1)
     bc5 = GeneralBC([-left_RBC, params[1], -params[2]], [-right_RBC, params[1], params[2]],
-                    1.0, 1)
+        1.0, 1)
     bc6 = PeriodicBC(Float64)
 
     @test L1 * bc1 * M ≈

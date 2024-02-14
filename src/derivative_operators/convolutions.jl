@@ -15,7 +15,7 @@
 
 # mul! done by convolutions
 function LinearAlgebra.mul!(x_temp::AbstractVector, A::DerivativeOperator,
-                            x::AbstractVector; overwrite = true)
+        x::AbstractVector; overwrite = true)
     convolve_BC_left!(x_temp, x, A, overwrite = overwrite)
     convolve_interior!(x_temp, x, A, overwrite = overwrite)
     convolve_BC_right!(x_temp, x, A, overwrite = overwrite)
@@ -25,8 +25,8 @@ end
 
 # Against a standard vector, assume already padded and just apply the stencil
 function convolve_interior!(x_temp::AbstractVector{T1}, x::AbstractVector{T2},
-                            A::DerivativeOperator{T3, N, false}; overwrite = true,
-                            add_range = false, offset::Int = 0) where {T1, T2, T3, N}
+        A::DerivativeOperator{T3, N, false}; overwrite = true,
+        add_range = false, offset::Int = 0) where {T1, T2, T3, N}
     T = promote_type(T1, T2, T3)
     @assert length(x_temp) + 2 == length(x)
     stencil = A.stencil_coefs
@@ -74,8 +74,8 @@ function convolve_interior!(x_temp::AbstractVector{T1}, x::AbstractVector{T2},
 end
 
 function convolve_BC_left!(x_temp::AbstractVector{T1}, x::AbstractVector{T2},
-                           A::DerivativeOperator{T3, N, false};
-                           overwrite = true) where {T1, T2, T3, N}
+        A::DerivativeOperator{T3, N, false};
+        overwrite = true) where {T1, T2, T3, N}
     T = promote_type(T1, T2, T3)
     stencil = A.low_boundary_coefs
 
@@ -95,8 +95,8 @@ function convolve_BC_left!(x_temp::AbstractVector{T1}, x::AbstractVector{T2},
 end
 
 function convolve_BC_right!(x_temp::AbstractVector{T1}, x::AbstractVector{T2},
-                            A::DerivativeOperator{T3, N, false};
-                            overwrite = true) where {T1, T2, T3, N}
+        A::DerivativeOperator{T3, N, false};
+        overwrite = true) where {T1, T2, T3, N}
     T = promote_type(T1, T2, T3)
     stencil = A.high_boundary_coefs
 
@@ -121,8 +121,8 @@ end
 # Uniform grid Upwind convolutions
 ################################################################################
 function convolve_interior!(x_temp::AbstractVector{T}, x::AbstractVector{T},
-                            A::DerivativeOperator{T, N, true};
-                            overwrite = true) where {T <: Real, N}
+        A::DerivativeOperator{T, N, true};
+        overwrite = true) where {T <: Real, N}
     @assert length(x_temp) + 2 == length(x)
     stencil = A.stencil_coefs
     coeff = A.coefficients
@@ -144,8 +144,8 @@ function convolve_interior!(x_temp::AbstractVector{T}, x::AbstractVector{T},
 end
 
 function convolve_BC_left!(x_temp::AbstractVector{T}, x::AbstractVector{T},
-                           A::DerivativeOperator{T, N, true};
-                           overwrite = true) where {T <: Real, N}
+        A::DerivativeOperator{T, N, true};
+        overwrite = true) where {T <: Real, N}
     coeff = A.coefficients
     upwind_stencils = A.stencil_coefs
     downwind_stencils = A.low_boundary_coefs
@@ -168,8 +168,8 @@ function convolve_BC_left!(x_temp::AbstractVector{T}, x::AbstractVector{T},
 end
 
 function convolve_BC_right!(x_temp::AbstractVector{T}, x::AbstractVector{T},
-                            A::DerivativeOperator{T, N, true};
-                            overwrite = true) where {T <: Real, N}
+        A::DerivativeOperator{T, N, true};
+        overwrite = true) where {T <: Real, N}
     coeff = A.coefficients
     upwind_stencils = A.high_boundary_coefs
     downwind_stencils = A.stencil_coefs
@@ -219,8 +219,8 @@ end
 ################################################################################
 
 function convolve_interior!(x_temp::AbstractVector{T}, x::AbstractVector{T},
-                            A::DerivativeOperator{T, N, true, M};
-                            overwrite = true) where {T <: Real, N, M <: AbstractArray{T}}
+        A::DerivativeOperator{T, N, true, M};
+        overwrite = true) where {T <: Real, N, M <: AbstractArray{T}}
     @assert length(x_temp) + 2 == length(x)
 
     len = A.len
@@ -275,8 +275,8 @@ function convolve_interior!(x_temp::AbstractVector{T}, x::AbstractVector{T},
 end
 
 function convolve_BC_left!(x_temp::AbstractVector{T}, x::AbstractVector{T},
-                           A::DerivativeOperator{T, N, true, M};
-                           overwrite = true) where {T <: Real, N, M <: AbstractArray{T}}
+        A::DerivativeOperator{T, N, true, M};
+        overwrite = true) where {T <: Real, N, M <: AbstractArray{T}}
     bpc = A.boundary_point_count
     stl = A.stencil_length
     bstl = A.boundary_stencil_length
@@ -317,8 +317,8 @@ function convolve_BC_left!(x_temp::AbstractVector{T}, x::AbstractVector{T},
 end
 
 function convolve_BC_right!(x_temp::AbstractVector{T}, x::AbstractVector{T},
-                            A::DerivativeOperator{T, N, true, M};
-                            overwrite = true) where {T <: Real, N, M <: AbstractArray{T}}
+        A::DerivativeOperator{T, N, true, M};
+        overwrite = true) where {T <: Real, N, M <: AbstractArray{T}}
     len = A.len
     bpc = A.boundary_point_count
     stl = A.stencil_length
@@ -365,8 +365,8 @@ end
 
 # Against A BC-padded vector, specialize the computation to explicitly use the left, right, and middle parts
 function convolve_interior!(x_temp::AbstractVector{T1}, _x::BoundaryPaddedVector,
-                            A::DerivativeOperator{T2, N, false};
-                            overwrite = true) where {T1, T2, N}
+        A::DerivativeOperator{T2, N, false};
+        overwrite = true) where {T1, T2, N}
     T = promote_type(T1, T2)
     stencil = A.stencil_coefs
 
@@ -400,8 +400,8 @@ function convolve_interior!(x_temp::AbstractVector{T1}, _x::BoundaryPaddedVector
 end
 
 function convolve_BC_left!(x_temp::AbstractVector{T1}, _x::BoundaryPaddedVector,
-                           A::DerivativeOperator{T2, N, false};
-                           overwrite = true) where {T1, T2, N}
+        A::DerivativeOperator{T2, N, false};
+        overwrite = true) where {T1, T2, N}
     T = promote_type(T1, T2)
     stencil = A.low_boundary_coefs
     coeff = A.coefficients
@@ -434,8 +434,8 @@ function convolve_BC_left!(x_temp::AbstractVector{T1}, _x::BoundaryPaddedVector,
 end
 
 function convolve_BC_right!(x_temp::AbstractVector{T1}, _x::BoundaryPaddedVector,
-                            A::DerivativeOperator{T2, N, false};
-                            overwrite = true) where {T1, T2, N}
+        A::DerivativeOperator{T2, N, false};
+        overwrite = true) where {T1, T2, N}
     T = promote_type(T1, T2)
     stencil = A.high_boundary_coefs
 
@@ -477,8 +477,8 @@ end
 # Against A BC-padded vector, specialize the computation to explicitly use the left, right, and middle parts
 ################################################################################
 function convolve_interior!(x_temp::AbstractVector{T}, _x::BoundaryPaddedVector,
-                            A::DerivativeOperator{T, N, true};
-                            overwrite = true) where {T <: Real, N}
+        A::DerivativeOperator{T, N, true};
+        overwrite = true) where {T <: Real, N}
     @assert length(x_temp) + 2 == length(_x)
     stencil = A.stencil_coefs
     coeff = A.coefficients
@@ -509,8 +509,8 @@ function convolve_interior!(x_temp::AbstractVector{T}, _x::BoundaryPaddedVector,
 end
 
 function convolve_BC_left!(x_temp::AbstractVector{T}, _x::BoundaryPaddedVector,
-                           A::DerivativeOperator{T, N, true};
-                           overwrite = true) where {T <: Real, N}
+        A::DerivativeOperator{T, N, true};
+        overwrite = true) where {T <: Real, N}
     coeff = A.coefficients
     upwind_stencils = A.stencil_coefs
     downwind_stencils = A.low_boundary_coefs
@@ -537,8 +537,8 @@ function convolve_BC_left!(x_temp::AbstractVector{T}, _x::BoundaryPaddedVector,
 end
 
 function convolve_BC_right!(x_temp::AbstractVector{T}, _x::BoundaryPaddedVector,
-                            A::DerivativeOperator{T, N, true};
-                            overwrite = true) where {T <: Real, N}
+        A::DerivativeOperator{T, N, true};
+        overwrite = true) where {T <: Real, N}
     coeff = A.coefficients
     upwind_stencils = A.high_boundary_coefs
     downwind_stencils = A.stencil_coefs
@@ -595,8 +595,8 @@ end
 # Against A BC-padded vector, specialize the computation to explicitly use the left, right, and middle parts
 ################################################################################
 function convolve_interior!(x_temp::AbstractVector{T}, _x::BoundaryPaddedVector,
-                            A::DerivativeOperator{T, N, true, M};
-                            overwrite = true) where {T <: Real, N, M <: AbstractArray{T}}
+        A::DerivativeOperator{T, N, true, M};
+        overwrite = true) where {T <: Real, N, M <: AbstractArray{T}}
     @assert length(x_temp) + 2 == length(_x)
 
     len = A.len
@@ -631,8 +631,8 @@ function convolve_interior!(x_temp::AbstractVector{T}, _x::BoundaryPaddedVector,
 end
 
 function convolve_BC_left!(x_temp::AbstractVector{T}, _x::BoundaryPaddedVector,
-                           A::DerivativeOperator{T, N, true, M};
-                           overwrite = true) where {T <: Real, N, M <: AbstractArray{T}}
+        A::DerivativeOperator{T, N, true, M};
+        overwrite = true) where {T <: Real, N, M <: AbstractArray{T}}
     bpc = A.boundary_point_count
     stl = A.stencil_length
     bstl = A.boundary_stencil_length
@@ -679,8 +679,8 @@ function convolve_BC_left!(x_temp::AbstractVector{T}, _x::BoundaryPaddedVector,
 end
 
 function convolve_BC_right!(x_temp::AbstractVector{T}, _x::BoundaryPaddedVector,
-                            A::DerivativeOperator{T, N, true, M};
-                            overwrite = true) where {T <: Real, N, M <: AbstractArray{T}}
+        A::DerivativeOperator{T, N, true, M};
+        overwrite = true) where {T <: Real, N, M <: AbstractArray{T}}
     len = A.len
     bpc = A.boundary_point_count
     stl = A.stencil_length

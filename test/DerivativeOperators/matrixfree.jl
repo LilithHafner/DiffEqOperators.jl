@@ -6,7 +6,7 @@ using DiffEqOperators, OrdinaryDiffEq
     iden_op = MatrixFreeOperator(identity)
     @test iden_op ==
           MatrixFreeOperator(identity, (nothing,), size = nothing, opnorm = true,
-                             ishermitian = false)
+        ishermitian = false)
     @test_throws AssertionError MatrixFreeOperator(identity, ())
     @test_throws AssertionError MatrixFreeOperator(identity, (0, 0, 0))
     @test_throws AssertionError MatrixFreeOperator(identity, [1])
@@ -15,7 +15,7 @@ end
 @testset "Matrix Free Operator methods" begin
     iden_op = MatrixFreeOperator(identity)
     iden_op1 = MatrixFreeOperator(identity, (2, 2), size = (2, 2),
-                                  opnorm = identity)
+        opnorm = identity)
     f = (du, u, p) -> begin
         cumsum!(du, u)
         @. du = p * du

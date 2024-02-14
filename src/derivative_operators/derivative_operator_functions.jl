@@ -16,16 +16,16 @@
 
 # Fallback mul! implementation for a single DerivativeOperator operating on an AbstractArray
 function LinearAlgebra.mul!(x_temp::AbstractVecOrMat{T}, A::DerivativeOperator{T, N},
-                            M::AbstractVecOrMat{T}; overwrite = true) where {T, N}
+        M::AbstractVecOrMat{T}; overwrite = true) where {T, N}
     _mul!(x_temp, A, M; overwrite = overwrite)
 end
 function LinearAlgebra.mul!(x_temp::AbstractArray{T}, A::DerivativeOperator{T, N},
-                            M::AbstractArray{T}; overwrite = true) where {T, N}
+        M::AbstractArray{T}; overwrite = true) where {T, N}
     _mul!(x_temp, A, M; overwrite = overwrite)
 end
 
 function _mul!(x_temp::AbstractArray{T}, A::DerivativeOperator{T, N},
-               M::AbstractArray{T}; overwrite = true) where {T, N}
+        M::AbstractArray{T}; overwrite = true) where {T, N}
 
     # Check that x_temp has valid dimensions, allowing unnecessary padding in M
     v = zeros(ndims(x_temp))
@@ -64,85 +64,90 @@ function _mul!(x_temp::AbstractArray{T}, A::DerivativeOperator{T, N},
         # replace all elements of idx with corresponding elt of I, except at index N
         Base.replace_tuples!(nidx, idx, idx, otherdims, I)
         mul!(view(x_temp, idx...), A, view(minimally_padded_M, idx...),
-             overwrite = overwrite)
+            overwrite = overwrite)
     end
 end
 
 # A more efficient mul! implementation for a single, regular-grid, centered difference,
 # scalar coefficient, non-winding, DerivativeOperator operating on a 2-D or 3-D AbstractArray
 for MT in [2, 3]
-    @eval begin function LinearAlgebra.mul!(x_temp::AbstractArray{T, $MT},
-                                            A::DerivativeOperator{T, N, false, T2, S1, S2,
-                                                                  T3},
-                                            M::AbstractArray{T, $MT}) where
-        {T, N, T2, SL, S1 <: SArray{Tuple{SL}, T, 1, SL}, S2, T3 <: Union{Nothing, Number}}
-        # Check that x_temp has valid dimensions, allowing unnecessary padding in M
-        v = zeros(ndims(x_temp))
-        v .= 2
-        @assert all(([size(x_temp)...] .== [size(M)...])
-                    .|
-                    (([size(x_temp)...] .+ v) .== [size(M)...]))
+    @eval begin
+        function LinearAlgebra.mul!(x_temp::AbstractArray{T, $MT},
+                A::DerivativeOperator{T, N, false, T2, S1, S2,
+                    T3},
+                M::AbstractArray{T, $MT}) where
+                {T, N, T2, SL, S1 <: SArray{Tuple{SL}, T, 1, SL},
+                S2, T3 <: Union{Nothing, Number}}
+            # Check that x_temp has valid dimensions, allowing unnecessary padding in M
+            v = zeros(ndims(x_temp))
+            v .= 2
+            @assert all(([size(x_temp)...] .== [size(M)...])
+                        .|
+                        (([size(x_temp)...] .+ v) .== [size(M)...]))
 
-        # Check that axis of differentiation is in the dimensions of M and x_temp
-        ndims_x_temp = ndims(x_temp)
-        @assert N <= ndims_x_temp
-        @assert size(x_temp, N) + 2 == size(M, N) # differentiated dimension must be padded
+            # Check that axis of differentiation is in the dimensions of M and x_temp
+            ndims_x_temp = ndims(x_temp)
+            @assert N <= ndims_x_temp
+            @assert size(x_temp, N) + 2 == size(M, N) # differentiated dimension must be padded
 
-        # Determine padding for NNlib.conv!
-        bpc = A.boundary_point_count
-        pad = zeros(Int64, ndims_x_temp)
-        pad[N] = bpc
+            # Determine padding for NNlib.conv!
+            bpc = A.boundary_point_count
+            pad = zeros(Int64, ndims_x_temp)
+            pad[N] = bpc
 
-        # Reshape x_temp for NNlib.conv!
-        _x_temp = reshape(x_temp, (size(x_temp)..., 1, 1))
+            # Reshape x_temp for NNlib.conv!
+            _x_temp = reshape(x_temp, (size(x_temp)..., 1, 1))
 
-        # Reshape M for NNlib.conv!
-        dims_M = [axes(M)...]
-        dims_x_temp = [axes(x_temp)...]
-        minimal_padding_indices = map(enumerate(dims_x_temp)) do (dim, val)
-            if dim == N || length(dims_x_temp[dim]) == length(dims_M[dim])
-                Colon()
-            else
-                dims_M[dim][(begin + 1):(end - 1)]
+            # Reshape M for NNlib.conv!
+            dims_M = [axes(M)...]
+            dims_x_temp = [axes(x_temp)...]
+            minimal_padding_indices = map(enumerate(dims_x_temp)) do (dim, val)
+                if dim == N || length(dims_x_temp[dim]) == length(dims_M[dim])
+                    Colon()
+                else
+                    dims_M[dim][(begin + 1):(end - 1)]
+                end
+            end
+            minimally_padded_M = view(M, minimal_padding_indices...)
+            _M = reshape(minimally_padded_M, (size(minimally_padded_M)..., 1, 1))
+
+            # Setup W, the kernel for NNlib.conv!
+            s = A.stencil_coefs
+            sl = A.stencil_length
+            Wdims = ones(Int64, ndims(_x_temp))
+            Wdims[N] = sl
+            W = zeros(Wdims...)
+            Widx = Any[Wdims...]
+            setindex!(Widx, :, N)
+            coeff = A.coefficients === nothing ? true : A.coefficients
+            W[Widx...] = coeff * s
+
+            cv = DenseConvDims(_M, W, padding = pad, flipkernel = true)
+            conv!(_x_temp, _M, W, cv)
+
+            # Now deal with boundaries
+            if bpc > 0
+                dims_minimal_M = [axes(minimally_padded_M)...]
+                alldims = [1:ndims(minimally_padded_M);]
+                otherdims = setdiff(alldims, N)
+
+                idx = Any[first(ind) for ind in axes(minimally_padded_M)]
+                itershape = tuple(dims_minimal_M[otherdims]...)
+                nidx = length(otherdims)
+                indices = Iterators.drop(CartesianIndices(itershape), 0)
+
+                setindex!(idx, :, N)
+                for I in indices
+                    Base.replace_tuples!(nidx, idx, idx, otherdims, I)
+                    convolve_BC_left!(
+                        view(x_temp, idx...), view(minimally_padded_M, idx...), A)
+                    convolve_BC_right!(
+                        view(x_temp, idx...), view(minimally_padded_M, idx...),
+                        A)
+                end
             end
         end
-        minimally_padded_M = view(M, minimal_padding_indices...)
-        _M = reshape(minimally_padded_M, (size(minimally_padded_M)..., 1, 1))
-
-        # Setup W, the kernel for NNlib.conv!
-        s = A.stencil_coefs
-        sl = A.stencil_length
-        Wdims = ones(Int64, ndims(_x_temp))
-        Wdims[N] = sl
-        W = zeros(Wdims...)
-        Widx = Any[Wdims...]
-        setindex!(Widx, :, N)
-        coeff = A.coefficients === nothing ? true : A.coefficients
-        W[Widx...] = coeff * s
-
-        cv = DenseConvDims(_M, W, padding = pad, flipkernel = true)
-        conv!(_x_temp, _M, W, cv)
-
-        # Now deal with boundaries
-        if bpc > 0
-            dims_minimal_M = [axes(minimally_padded_M)...]
-            alldims = [1:ndims(minimally_padded_M);]
-            otherdims = setdiff(alldims, N)
-
-            idx = Any[first(ind) for ind in axes(minimally_padded_M)]
-            itershape = tuple(dims_minimal_M[otherdims]...)
-            nidx = length(otherdims)
-            indices = Iterators.drop(CartesianIndices(itershape), 0)
-
-            setindex!(idx, :, N)
-            for I in indices
-                Base.replace_tuples!(nidx, idx, idx, otherdims, I)
-                convolve_BC_left!(view(x_temp, idx...), view(minimally_padded_M, idx...), A)
-                convolve_BC_right!(view(x_temp, idx...), view(minimally_padded_M, idx...),
-                                   A)
-            end
-        end
-    end end
+    end
 end
 
 ###########################################
@@ -165,43 +170,44 @@ end
 function *(c::Number, A::DerivativeOperator{T, N, Wind}) where {T, N, Wind}
     coefficients = A.coefficients === nothing ? oneunit(T) .* c : c .* A.coefficients
     DerivativeOperator{T, N, Wind, typeof(A.dx), typeof(A.stencil_coefs),
-                       typeof(A.low_boundary_coefs), typeof(A.high_boundary_coefs),
-                       typeof(coefficients),
-                       typeof(A.coeff_func)}(A.derivative_order, A.approximation_order,
-                                             A.dx, A.len, A.stencil_length,
-                                             A.stencil_coefs,
-                                             A.boundary_stencil_length,
-                                             A.boundary_point_count,
-                                             A.low_boundary_coefs,
-                                             A.high_boundary_coefs, A.offside, coefficients,
-                                             A.coeff_func)
+        typeof(A.low_boundary_coefs), typeof(A.high_boundary_coefs),
+        typeof(coefficients),
+        typeof(A.coeff_func)}(A.derivative_order, A.approximation_order,
+        A.dx, A.len, A.stencil_length,
+        A.stencil_coefs,
+        A.boundary_stencil_length,
+        A.boundary_point_count,
+        A.low_boundary_coefs,
+        A.high_boundary_coefs, A.offside, coefficients,
+        A.coeff_func)
 end
 
 function *(c::AbstractVector{<:Number},
-           A::DerivativeOperator{T, N, Wind}) where {T, N, Wind}
+        A::DerivativeOperator{T, N, Wind}) where {T, N, Wind}
     if length(c) != A.len
         throw(DimensionMismatch("length of c ($(length(c))) must match length of A ($A.len)"))
     end
     coefficients = A.coefficients === nothing ? c : c .* A.coefficients
     DerivativeOperator{T, N, Wind, typeof(A.dx), typeof(A.stencil_coefs),
-                       typeof(A.low_boundary_coefs), typeof(A.high_boundary_coefs),
-                       typeof(coefficients),
-                       typeof(A.coeff_func)}(A.derivative_order, A.approximation_order,
-                                             A.dx, A.len, A.stencil_length,
-                                             A.stencil_coefs,
-                                             A.boundary_stencil_length,
-                                             A.boundary_point_count,
-                                             A.low_boundary_coefs,
-                                             A.high_boundary_coefs, A.offside, coefficients,
-                                             A.coeff_func)
+        typeof(A.low_boundary_coefs), typeof(A.high_boundary_coefs),
+        typeof(coefficients),
+        typeof(A.coeff_func)}(A.derivative_order, A.approximation_order,
+        A.dx, A.len, A.stencil_length,
+        A.stencil_coefs,
+        A.boundary_stencil_length,
+        A.boundary_point_count,
+        A.low_boundary_coefs,
+        A.high_boundary_coefs, A.offside, coefficients,
+        A.coeff_func)
 end
 
 ###########################################
 
 # A more efficient mul! implementation for compositions of operators which may include regular-grid, centered difference,
 # scalar coefficient, non-winding, DerivativeOperator, operating on a 2-D or 3-D AbstractArray
-function LinearAlgebra.mul!(x_temp::AbstractArray{T, 2}, A::AbstractDiffEqCompositeOperator,
-                            M::AbstractArray{T, 2}) where {T}
+function LinearAlgebra.mul!(
+        x_temp::AbstractArray{T, 2}, A::AbstractDiffEqCompositeOperator,
+        M::AbstractArray{T, 2}) where {T}
 
     # opsA operators satisfy conditions for NNlib.conv! call, opsB operators do not
     opsA = DerivativeOperator[]
@@ -299,30 +305,31 @@ function LinearAlgebra.mul!(x_temp::AbstractArray{T, 2}, A::AbstractDiffEqCompos
             if length(ops_1) > 0
                 for i in 1:size(x_temp)[2]
                     convolve_BC_left!(view(x_temp, :, i), view(M, :, i + offset_x),
-                                      opsA[ops_1_max_bpc_idx...])
+                        opsA[ops_1_max_bpc_idx...])
                     convolve_BC_right!(view(x_temp, :, i), view(M, :, i + offset_x),
-                                       opsA[ops_1_max_bpc_idx...])
+                        opsA[ops_1_max_bpc_idx...])
                     if i <= pad[2] || i > size(x_temp)[2] - pad[2]
                         convolve_interior!(view(x_temp, :, i), view(M, :, i + offset_x),
-                                           opsA[ops_1_max_bpc_idx...])
+                            opsA[ops_1_max_bpc_idx...])
                     end
 
                     for Lidx in ops_1
                         if Lidx != ops_1_max_bpc_idx[1]
                             convolve_BC_left!(view(x_temp, :, i), view(M, :, i + offset_x),
-                                              opsA[Lidx], overwrite = false)
-                            convolve_BC_right!(view(x_temp, :, i), view(M, :, i + offset_x),
-                                               opsA[Lidx], overwrite = false)
+                                opsA[Lidx], overwrite = false)
+                            convolve_BC_right!(
+                                view(x_temp, :, i), view(M, :, i + offset_x),
+                                opsA[Lidx], overwrite = false)
                             if i <= pad[2] || i > size(x_temp)[2] - pad[2]
                                 convolve_interior!(view(x_temp, :, i),
-                                                   view(M, :, i + offset_x), opsA[Lidx],
-                                                   overwrite = false)
+                                    view(M, :, i + offset_x), opsA[Lidx],
+                                    overwrite = false)
                             elseif pad[1] - opsA[Lidx].boundary_point_count > 0
                                 convolve_interior!(view(x_temp, :, i),
-                                                   view(M, :, i + offset_x), opsA[Lidx],
-                                                   overwrite = false, add_range = true,
-                                                   offset = pad[1] -
-                                                            opsA[Lidx].boundary_point_count)
+                                    view(M, :, i + offset_x), opsA[Lidx],
+                                    overwrite = false, add_range = true,
+                                    offset = pad[1] -
+                                             opsA[Lidx].boundary_point_count)
                             end
                         end
                     end
@@ -334,41 +341,44 @@ function LinearAlgebra.mul!(x_temp::AbstractArray{T, 2}, A::AbstractDiffEqCompos
                     # in the case of no axis 1 operators, we need to overwrite x_temp
                     if length(ops_1) == 0
                         convolve_BC_left!(view(x_temp, i, :), view(M, i + offset_y, :),
-                                          opsA[ops_2_max_bpc_idx...])
+                            opsA[ops_2_max_bpc_idx...])
                         convolve_BC_right!(view(x_temp, i, :), view(M, i + offset_y, :),
-                                           opsA[ops_2_max_bpc_idx...])
+                            opsA[ops_2_max_bpc_idx...])
                         if i <= pad[1] || i > size(x_temp)[1] - pad[1]
-                            convolve_interior!(view(x_temp, i, :), view(M, i + offset_y, :),
-                                               opsA[ops_2_max_bpc_idx...])
+                            convolve_interior!(
+                                view(x_temp, i, :), view(M, i + offset_y, :),
+                                opsA[ops_2_max_bpc_idx...])
                         end
 
                     else
                         convolve_BC_left!(view(x_temp, i, :), view(M, i + offset_y, :),
-                                          opsA[ops_2_max_bpc_idx...], overwrite = false)
+                            opsA[ops_2_max_bpc_idx...], overwrite = false)
                         convolve_BC_right!(view(x_temp, i, :), view(M, i + offset_y, :),
-                                           opsA[ops_2_max_bpc_idx...], overwrite = false)
+                            opsA[ops_2_max_bpc_idx...], overwrite = false)
                         if i <= pad[1] || i > size(x_temp)[1] - pad[1]
-                            convolve_interior!(view(x_temp, i, :), view(M, i + offset_y, :),
-                                               opsA[ops_2_max_bpc_idx...],
-                                               overwrite = false)
+                            convolve_interior!(
+                                view(x_temp, i, :), view(M, i + offset_y, :),
+                                opsA[ops_2_max_bpc_idx...],
+                                overwrite = false)
                         end
                     end
                     for Lidx in ops_2
                         if Lidx != ops_2_max_bpc_idx[1]
                             convolve_BC_left!(view(x_temp, i, :), view(M, i + offset_y, :),
-                                              opsA[Lidx], overwrite = false)
-                            convolve_BC_right!(view(x_temp, i, :), view(M, i + offset_y, :),
-                                               opsA[Lidx], overwrite = false)
+                                opsA[Lidx], overwrite = false)
+                            convolve_BC_right!(
+                                view(x_temp, i, :), view(M, i + offset_y, :),
+                                opsA[Lidx], overwrite = false)
                             if i <= pad[1] || i > size(x_temp)[1] - pad[1]
                                 convolve_interior!(view(x_temp, i, :),
-                                                   view(M, i + offset_y, :), opsA[Lidx],
-                                                   overwrite = false)
+                                    view(M, i + offset_y, :), opsA[Lidx],
+                                    overwrite = false)
                             elseif pad[2] - opsA[Lidx].boundary_point_count > 0
                                 convolve_interior!(view(x_temp, i, :),
-                                                   view(M, i + offset_y, :), opsA[Lidx],
-                                                   overwrite = false, add_range = true,
-                                                   offset = pad[2] -
-                                                            opsA[Lidx].boundary_point_count)
+                                    view(M, i + offset_y, :), opsA[Lidx],
+                                    overwrite = false, add_range = true,
+                                    offset = pad[2] -
+                                             opsA[Lidx].boundary_point_count)
                             end
                         end
                     end
@@ -396,14 +406,14 @@ function LinearAlgebra.mul!(x_temp::AbstractArray{T, 2}, A::AbstractDiffEqCompos
             if N == 1
                 if operating_dims[2] == 1
                     mul!(x_temp, L, view(M, 1:(x_temp_1 + 2), 1:x_temp_2),
-                         overwrite = false)
+                        overwrite = false)
                 else
                     mul!(x_temp, L, M, overwrite = false)
                 end
             else
                 if operating_dims[1] == 1
                     mul!(x_temp, L, view(M, 1:x_temp_1, 1:(x_temp_2 + 2)),
-                         overwrite = false)
+                        overwrite = false)
                 else
                     mul!(x_temp, L, M, overwrite = false)
                 end
@@ -445,14 +455,14 @@ function LinearAlgebra.mul!(x_temp::AbstractArray{T, 2}, A::AbstractDiffEqCompos
             if N == 1
                 if operating_dims[2] == 1
                     mul!(x_temp, L, view(M, 1:(x_temp_1 + 2), 1:x_temp_2),
-                         overwrite = false)
+                        overwrite = false)
                 else
                     mul!(x_temp, L, M, overwrite = false)
                 end
             else
                 if operating_dims[1] == 1
                     mul!(x_temp, L, view(M, 1:x_temp_1, 1:(x_temp_2 + 2)),
-                         overwrite = false)
+                        overwrite = false)
                 else
                     mul!(x_temp, L, M, overwrite = false)
                 end
@@ -463,8 +473,9 @@ end
 
 # A more efficient mul! implementation for compositions of operators which may include regular-grid, centered difference,
 # scalar coefficient, non-winding, DerivativeOperator, operating on a 2-D or 3-D AbstractArray
-function LinearAlgebra.mul!(x_temp::AbstractArray{T, 3}, A::AbstractDiffEqCompositeOperator,
-                            M::AbstractArray{T, 3}) where {T}
+function LinearAlgebra.mul!(
+        x_temp::AbstractArray{T, 3}, A::AbstractDiffEqCompositeOperator,
+        M::AbstractArray{T, 3}) where {T}
 
     # opsA operators satisfy conditions for NNlib.conv! call, opsB operators do not
     opsA = DerivativeOperator[]
@@ -575,39 +586,39 @@ function LinearAlgebra.mul!(x_temp::AbstractArray{T, 3}, A::AbstractDiffEqCompos
                 for i in 1:size(x_temp)[2]
                     for j in 1:size(x_temp)[3]
                         convolve_BC_left!(view(x_temp, :, i, j),
-                                          view(M, :, i + offset_y, j + offset_z),
-                                          opsA[ops_1_max_bpc_idx...])
+                            view(M, :, i + offset_y, j + offset_z),
+                            opsA[ops_1_max_bpc_idx...])
                         convolve_BC_right!(view(x_temp, :, i, j),
-                                           view(M, :, i + offset_y, j + offset_z),
-                                           opsA[ops_1_max_bpc_idx...])
+                            view(M, :, i + offset_y, j + offset_z),
+                            opsA[ops_1_max_bpc_idx...])
                         if i <= pad[2] || i > size(x_temp)[2] - pad[2] || j <= pad[3] ||
                            j > size(x_temp)[3] - pad[3]
                             convolve_interior!(view(x_temp, :, i, j),
-                                               view(M, :, i + offset_y, j + offset_z),
-                                               opsA[ops_1_max_bpc_idx...])
+                                view(M, :, i + offset_y, j + offset_z),
+                                opsA[ops_1_max_bpc_idx...])
                         end
 
                         for Lidx in ops_1
                             if Lidx != ops_1_max_bpc_idx[1]
                                 convolve_BC_left!(view(x_temp, :, i, j),
-                                                  view(M, :, i + offset_y, j + offset_z),
-                                                  opsA[Lidx], overwrite = false)
+                                    view(M, :, i + offset_y, j + offset_z),
+                                    opsA[Lidx], overwrite = false)
                                 convolve_BC_right!(view(x_temp, :, i, j),
-                                                   view(M, :, i + offset_y, j + offset_z),
-                                                   opsA[Lidx], overwrite = false)
+                                    view(M, :, i + offset_y, j + offset_z),
+                                    opsA[Lidx], overwrite = false)
                                 if i <= pad[2] || i > size(x_temp)[2] - pad[2] ||
                                    j <= pad[3] || j > size(x_temp)[3] - pad[3]
                                     convolve_interior!(view(x_temp, :, i, j),
-                                                       view(M, :, i + offset_y,
-                                                            j + offset_z), opsA[Lidx],
-                                                       overwrite = false)
+                                        view(M, :, i + offset_y,
+                                            j + offset_z), opsA[Lidx],
+                                        overwrite = false)
                                 elseif pad[1] - opsA[Lidx].boundary_point_count > 0
                                     convolve_interior!(view(x_temp, :, i, j),
-                                                       view(M, :, i + offset_y,
-                                                            j + offset_z), opsA[Lidx],
-                                                       overwrite = false, add_range = true,
-                                                       offset = pad[1] -
-                                                                opsA[Lidx].boundary_point_count)
+                                        view(M, :, i + offset_y,
+                                            j + offset_z), opsA[Lidx],
+                                        overwrite = false, add_range = true,
+                                        offset = pad[1] -
+                                                 opsA[Lidx].boundary_point_count)
                                 end
                             end
                         end
@@ -621,55 +632,55 @@ function LinearAlgebra.mul!(x_temp::AbstractArray{T, 3}, A::AbstractDiffEqCompos
                         # in the case of no axis 1 operators, we need to overwrite x_temp
                         if length(ops_1) == 0
                             convolve_BC_left!(view(x_temp, i, :, j),
-                                              view(M, i + offset_x, :, j + offset_z),
-                                              opsA[ops_2_max_bpc_idx...])
+                                view(M, i + offset_x, :, j + offset_z),
+                                opsA[ops_2_max_bpc_idx...])
                             convolve_BC_right!(view(x_temp, i, :, j),
-                                               view(M, i + offset_x, :, j + offset_z),
-                                               opsA[ops_2_max_bpc_idx...])
+                                view(M, i + offset_x, :, j + offset_z),
+                                opsA[ops_2_max_bpc_idx...])
                             if i <= pad[1] || i > size(x_temp)[1] - pad[1] || j <= pad[3] ||
                                j > size(x_temp)[3] - pad[3]
                                 convolve_interior!(view(x_temp, i, :, j),
-                                                   view(M, i + offset_x, :, j + offset_z),
-                                                   opsA[ops_2_max_bpc_idx...])
+                                    view(M, i + offset_x, :, j + offset_z),
+                                    opsA[ops_2_max_bpc_idx...])
                             end
 
                         else
                             convolve_BC_left!(view(x_temp, i, :, j),
-                                              view(M, i + offset_x, :, j + offset_z),
-                                              opsA[ops_2_max_bpc_idx...], overwrite = false)
+                                view(M, i + offset_x, :, j + offset_z),
+                                opsA[ops_2_max_bpc_idx...], overwrite = false)
                             convolve_BC_right!(view(x_temp, i, :, j),
-                                               view(M, i + offset_x, :, j + offset_z),
-                                               opsA[ops_2_max_bpc_idx...],
-                                               overwrite = false)
+                                view(M, i + offset_x, :, j + offset_z),
+                                opsA[ops_2_max_bpc_idx...],
+                                overwrite = false)
                             if i <= pad[1] || i > size(x_temp)[1] - pad[1] || j <= pad[3] ||
                                j > size(x_temp)[3] - pad[3]
                                 convolve_interior!(view(x_temp, i, :, j),
-                                                   view(M, i + offset_y, :, j + offset_z),
-                                                   opsA[ops_2_max_bpc_idx...],
-                                                   overwrite = false)
+                                    view(M, i + offset_y, :, j + offset_z),
+                                    opsA[ops_2_max_bpc_idx...],
+                                    overwrite = false)
                             end
                         end
                         for Lidx in ops_2
                             if Lidx != ops_2_max_bpc_idx[1]
                                 convolve_BC_left!(view(x_temp, i, :, j),
-                                                  view(M, i + offset_x, :, j + offset_z),
-                                                  opsA[Lidx], overwrite = false)
+                                    view(M, i + offset_x, :, j + offset_z),
+                                    opsA[Lidx], overwrite = false)
                                 convolve_BC_right!(view(x_temp, i, :, j),
-                                                   view(M, i + offset_x, :, j + offset_z),
-                                                   opsA[Lidx], overwrite = false)
+                                    view(M, i + offset_x, :, j + offset_z),
+                                    opsA[Lidx], overwrite = false)
                                 if i <= pad[1] || i > size(x_temp)[1] - pad[1] ||
                                    j <= pad[3] || j > size(x_temp)[3] - pad[3]
                                     convolve_interior!(view(x_temp, i, :, j),
-                                                       view(M, i + offset_x, :,
-                                                            j + offset_z), opsA[Lidx],
-                                                       overwrite = false)
+                                        view(M, i + offset_x, :,
+                                            j + offset_z), opsA[Lidx],
+                                        overwrite = false)
                                 elseif pad[2] - opsA[Lidx].boundary_point_count > 0
                                     convolve_interior!(view(x_temp, i, :, j),
-                                                       view(M, i + offset_x, :,
-                                                            j + offset_z), opsA[Lidx],
-                                                       overwrite = false, add_range = true,
-                                                       offset = pad[2] -
-                                                                opsA[Lidx].boundary_point_count)
+                                        view(M, i + offset_x, :,
+                                            j + offset_z), opsA[Lidx],
+                                        overwrite = false, add_range = true,
+                                        offset = pad[2] -
+                                                 opsA[Lidx].boundary_point_count)
                                 end
                             end
                         end
@@ -683,54 +694,54 @@ function LinearAlgebra.mul!(x_temp::AbstractArray{T, 3}, A::AbstractDiffEqCompos
                         # in the case of no axis 1 and 2 operators, we need to overwrite x_temp
                         if length(ops_1) == 0 && length(ops_2) == 0
                             convolve_BC_left!(view(x_temp, i, j, :),
-                                              view(M, i + offset_x, j + offset_y, :),
-                                              opsA[ops_3_max_bpc_idx...])
+                                view(M, i + offset_x, j + offset_y, :),
+                                opsA[ops_3_max_bpc_idx...])
                             convolve_BC_right!(view(x_temp, i, j, :),
-                                               view(M, i + offset_x, j + offset_y, :),
-                                               opsA[ops_3_max_bpc_idx...])
+                                view(M, i + offset_x, j + offset_y, :),
+                                opsA[ops_3_max_bpc_idx...])
                             if i <= pad[1] || i > size(x_temp)[1] - pad[1]
                                 convolve_interior!(view(x_temp, i, j, :),
-                                                   view(M, i + offset_x, j + offset_y, :),
-                                                   opsA[ops_3_max_bpc_idx...])
+                                    view(M, i + offset_x, j + offset_y, :),
+                                    opsA[ops_3_max_bpc_idx...])
                             end
 
                         else
                             convolve_BC_left!(view(x_temp, i, j, :),
-                                              view(M, i + offset_x, j + offset_y, :),
-                                              opsA[ops_3_max_bpc_idx...], overwrite = false)
+                                view(M, i + offset_x, j + offset_y, :),
+                                opsA[ops_3_max_bpc_idx...], overwrite = false)
                             convolve_BC_right!(view(x_temp, i, j, :),
-                                               view(M, i + offset_x, j + offset_y, :),
-                                               opsA[ops_3_max_bpc_idx...],
-                                               overwrite = false)
+                                view(M, i + offset_x, j + offset_y, :),
+                                opsA[ops_3_max_bpc_idx...],
+                                overwrite = false)
                             if i <= pad[1] || i > size(x_temp)[1] - pad[1] || j <= pad[2] ||
                                j > size(x_temp)[2] - pad[2]
                                 convolve_interior!(view(x_temp, i, j, :),
-                                                   view(M, i + offset_x, j + offset_y, :),
-                                                   opsA[ops_3_max_bpc_idx...],
-                                                   overwrite = false)
+                                    view(M, i + offset_x, j + offset_y, :),
+                                    opsA[ops_3_max_bpc_idx...],
+                                    overwrite = false)
                             end
                         end
                         for Lidx in ops_3
                             if Lidx != ops_3_max_bpc_idx[1]
                                 convolve_BC_left!(view(x_temp, i, j, :),
-                                                  view(M, i + offset_x, j + offset_y, :),
-                                                  opsA[Lidx], overwrite = false)
+                                    view(M, i + offset_x, j + offset_y, :),
+                                    opsA[Lidx], overwrite = false)
                                 convolve_BC_right!(view(x_temp, i, j, :),
-                                                   view(M, i + offset_x, j + offset_y, :),
-                                                   opsA[Lidx], overwrite = false)
+                                    view(M, i + offset_x, j + offset_y, :),
+                                    opsA[Lidx], overwrite = false)
                                 if i <= pad[1] || i > size(x_temp)[1] - pad[1] ||
                                    j <= pad[2] || j > size(x_temp)[2] - pad[2]
                                     convolve_interior!(view(x_temp, i, j, :),
-                                                       view(M, i + offset_x, j + offset_y,
-                                                            :), opsA[Lidx],
-                                                       overwrite = false)
+                                        view(M, i + offset_x, j + offset_y,
+                                            :), opsA[Lidx],
+                                        overwrite = false)
                                 elseif pad[3] - opsA[Lidx].boundary_point_count > 0
                                     convolve_interior!(view(x_temp, i, j, :),
-                                                       view(M, i + offset_x, j + offset_y,
-                                                            :), opsA[Lidx],
-                                                       overwrite = false, add_range = true,
-                                                       offset = pad[3] -
-                                                                opsA[Lidx].boundary_point_count)
+                                        view(M, i + offset_x, j + offset_y,
+                                            :), opsA[Lidx],
+                                        overwrite = false, add_range = true,
+                                        offset = pad[3] -
+                                                 opsA[Lidx].boundary_point_count)
                                 end
                             end
                         end
@@ -754,13 +765,13 @@ function LinearAlgebra.mul!(x_temp::AbstractArray{T, 3}, A::AbstractDiffEqCompos
             N = diff_axis(L)
             if N == 1
                 mul!(x_temp, L, view(M, 1:(x_temp_1 + 2), 1:x_temp_2, 1:x_temp_3),
-                     overwrite = false)
+                    overwrite = false)
             elseif N == 2
                 mul!(x_temp, L, view(M, 1:x_temp_1, 1:(x_temp_2 + 2), 1:x_temp_3),
-                     overwrite = false)
+                    overwrite = false)
             else
                 mul!(x_temp, L, view(M, 1:x_temp_1, 1:x_temp_2, 1:(x_temp_3 + 2)),
-                     overwrite = false)
+                    overwrite = false)
             end
         end
 
@@ -789,13 +800,13 @@ function LinearAlgebra.mul!(x_temp::AbstractArray{T, 3}, A::AbstractDiffEqCompos
             N = diff_axis(L)
             if N == 1
                 mul!(x_temp, L, view(M, 1:(x_temp_1 + 2), 1:x_temp_2, 1:x_temp_3),
-                     overwrite = false)
+                    overwrite = false)
             elseif N == 2
                 mul!(x_temp, L, view(M, 1:x_temp_1, 1:(x_temp_2 + 2), 1:x_temp_3),
-                     overwrite = false)
+                    overwrite = false)
             else
                 mul!(x_temp, L, view(M, 1:x_temp_1, 1:x_temp_2, 1:(x_temp_3 + 2)),
-                     overwrite = false)
+                    overwrite = false)
             end
         end
     end

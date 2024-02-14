@@ -10,13 +10,13 @@ Random.seed!(1793)
 
 # Setup
 StoppingProblem = @with_kw (μ_bar = -0.01, # 1D Brownian motion with drift
-                            σ_bar = 0.01,
-                            S_bar = 10.0,
-                            γ = 0.5, # u(x) = x^γ
-                            ρ = 0.05, # discount rate
-                            x_min = 0.01,
-                            x_max = 5.0,
-                            M = 15) # num of grid points
+    σ_bar = 0.01,
+    S_bar = 10.0,
+    γ = 0.5, # u(x) = x^γ
+    ρ = 0.05, # discount rate
+    x_min = 0.01,
+    x_max = 5.0,
+    M = 15) # num of grid points
 
 function LCP_objects(sp)
     # setup
@@ -47,7 +47,7 @@ function LCPsolve(sp)
     lb = zeros(n)
     ub = 300 .* ones(n) # a reasonable guess
     options(convergence_tolerance = 1e-15, output = :no,
-            time_limit = 600) # 10 minute budget
+        time_limit = 600) # 10 minute budget
     exit_code, sol_z, sol_f = @suppress solveLCP(f, lb, ub)
 end
 

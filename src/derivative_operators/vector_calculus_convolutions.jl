@@ -1,16 +1,16 @@
 
 # mul! implementations for cases when output/input arrays represent vector elements 
 function LinearAlgebra.mul!(x_temp::AbstractArray, has_vector::Bool,
-                            A::Union{GradientOperator, DivergenceOperator},
-                            M::AbstractArray; overwrite = false)
+        A::Union{GradientOperator, DivergenceOperator},
+        M::AbstractArray; overwrite = false)
     for L in A.ops
         mul!(x_temp, has_vector, L, M)
     end
 end
 
 function LinearAlgebra.mul!(x_temp::AbstractArray, has_vector::Bool,
-                            A::DerivativeOperator{T, N}, M::AbstractArray;
-                            overwrite = false) where {T, N}
+        A::DerivativeOperator{T, N}, M::AbstractArray;
+        overwrite = false) where {T, N}
 
     # transformation for convenience of computing derivates along particular axis
     if has_vector
@@ -45,7 +45,7 @@ function LinearAlgebra.mul!(x_temp::AbstractArray, has_vector::Bool,
             # replace all elements of idx with corresponding elt of I, except at index N
             Base.replace_tuples!(nidx, idx, idx, otherdims, I)
             mul!(view(x_temp, idx...), true, A, view(minimally_padded_M, idx...),
-                 overwrite = false)
+                overwrite = false)
         end
     else
         # For Gradient, input would be a scalar matrix and output a phycial vector with an extra dimension      
@@ -78,7 +78,7 @@ function LinearAlgebra.mul!(x_temp::AbstractArray, has_vector::Bool,
             # replace all elements of idx with corresponding elt of I, except at index N
             Base.replace_tuples!(nidx, idx, idx, otherdims, I)
             mul!(view(x_temp, idx..., N), false, A, view(minimally_padded_M, idx...),
-                 overwrite = false)
+                overwrite = false)
         end
     end
 end
@@ -87,15 +87,16 @@ end
 # Divergence and Gradient convolutions for general N-dim functions/vectors 
 ##################################################################################
 
-function LinearAlgebra.mul!(x_temp::AbstractVector, has_vector::Bool, A::DerivativeOperator,
-                            x::AbstractVector; overwrite = false)
+function LinearAlgebra.mul!(
+        x_temp::AbstractVector, has_vector::Bool, A::DerivativeOperator,
+        x::AbstractVector; overwrite = false)
     convolve_BC_left!(x_temp, A, x, overwrite = overwrite)
     convolve_interior!(x_temp, A, x, overwrite = overwrite)
     convolve_BC_right!(x_temp, A, x, overwrite = overwrite)
 end
 
 function convolve_interior!(x_temp::AbstractVector{T1}, A::DerivativeOperator{T2},
-                            x::AbstractVector{T1}; overwrite = true) where {T1, T2}
+        x::AbstractVector{T1}; overwrite = true) where {T1, T2}
     T = promote_type(T1, T2)
     @assert length(x_temp) + 2 == length(x)
     stencil = A.stencil_coefs
@@ -128,7 +129,7 @@ function convolve_interior!(x_temp::AbstractVector{T1}, A::DerivativeOperator{T2
 end
 
 function convolve_BC_left!(x_temp::AbstractVector{T1}, A::DerivativeOperator{T2},
-                           x::AbstractVector{T1}; overwrite = true) where {T1, T2}
+        x::AbstractVector{T1}; overwrite = true) where {T1, T2}
     T = promote_type(T1, T2)
     stencil = A.low_boundary_coefs
     coeff = A.coefficients
@@ -148,7 +149,7 @@ function convolve_BC_left!(x_temp::AbstractVector{T1}, A::DerivativeOperator{T2}
 end
 
 function convolve_BC_right!(x_temp::AbstractVector{T1}, A::DerivativeOperator{T2},
-                            x::AbstractVector{T1}; overwrite = true) where {T1, T2}
+        x::AbstractVector{T1}; overwrite = true) where {T1, T2}
     T = promote_type(T1, T2)
     stencil = A.high_boundary_coefs
     coeff = A.coefficients
@@ -174,19 +175,21 @@ end
 #########################################################################################
 
 for MT in [2, 3]
-    @eval begin function LinearAlgebra.mul!(x_temp::AbstractArray, has_vector::Bool,
-                                            A::Union{GradientOperator{T, $MT},
-                                                     DivergenceOperator{T, $MT}},
-                                            M::AbstractArray; overwrite = false) where {T}
-        convolve_BC_left!(x_temp, A, M, overwrite = overwrite)
-        convolve_interior!(x_temp, A, M, overwrite = overwrite)
-        convolve_BC_right!(x_temp, A, M, overwrite = overwrite)
-    end end
+    @eval begin
+        function LinearAlgebra.mul!(x_temp::AbstractArray, has_vector::Bool,
+                A::Union{GradientOperator{T, $MT},
+                    DivergenceOperator{T, $MT}},
+                M::AbstractArray; overwrite = false) where {T}
+            convolve_BC_left!(x_temp, A, M, overwrite = overwrite)
+            convolve_interior!(x_temp, A, M, overwrite = overwrite)
+            convolve_BC_right!(x_temp, A, M, overwrite = overwrite)
+        end
+    end
 end
 
 ####### Gradient Convolutions for  2D functions #######
 function convolve_interior!(x_temp::AbstractArray{T1}, A::GradientOperator{T2, 2},
-                            x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
+        x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
     T = promote_type(T1, T2, T3)
     s = size(x_temp)
     bpc = A.ops[1].boundary_point_count
@@ -248,7 +251,7 @@ function convolve_interior!(x_temp::AbstractArray{T1}, A::GradientOperator{T2, 2
 end
 
 function convolve_BC_left!(x_temp::AbstractArray{T1}, A::GradientOperator{T2, 2},
-                           x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
+        x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
     T = promote_type(T1, T2, T3)
     s = size(x_temp)
     stencil_1 = A.ops[1].low_boundary_coefs
@@ -288,7 +291,7 @@ function convolve_BC_left!(x_temp::AbstractArray{T1}, A::GradientOperator{T2, 2}
 end
 
 function convolve_BC_right!(x_temp::AbstractArray{T1}, A::GradientOperator{T2, 2},
-                            x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
+        x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
     T = promote_type(T1, T2, T3)
     s = size(x_temp)
     stencil_1 = A.ops[1].high_boundary_coefs
@@ -329,7 +332,7 @@ end
 
 ####### Divergence Convolutions for  2D Vectors #######
 function convolve_interior!(x_temp::AbstractArray{T1}, A::DivergenceOperator{T2, 2},
-                            x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
+        x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
     T = promote_type(T1, T2, T3)
     s = size(x_temp)
     bpc = A.ops[1].boundary_point_count
@@ -390,7 +393,7 @@ function convolve_interior!(x_temp::AbstractArray{T1}, A::DivergenceOperator{T2,
 end
 
 function convolve_BC_left!(x_temp::AbstractArray{T1}, A::DivergenceOperator{T2, 2},
-                           x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
+        x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
     T = promote_type(T1, T2, T3)
     s = size(x_temp)
     stencil_1 = A.ops[1].low_boundary_coefs
@@ -427,7 +430,7 @@ function convolve_BC_left!(x_temp::AbstractArray{T1}, A::DivergenceOperator{T2, 
 end
 
 function convolve_BC_right!(x_temp::AbstractArray{T1}, A::DivergenceOperator{T2, 2},
-                            x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
+        x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
     T = promote_type(T1, T2, T3)
     s = size(x_temp)
     stencil_1 = A.ops[1].high_boundary_coefs
@@ -467,7 +470,7 @@ end
 
 ####### Gradient Convolutions for  3D functions #######
 function convolve_interior!(x_temp::AbstractArray{T1}, A::GradientOperator{T2, 3},
-                            x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
+        x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
     T = promote_type(T1, T2, T3)
     s = size(x_temp)
     bpc = A.ops[1].boundary_point_count
@@ -549,7 +552,7 @@ function convolve_interior!(x_temp::AbstractArray{T1}, A::GradientOperator{T2, 3
 end
 
 function convolve_BC_left!(x_temp::AbstractArray{T1}, A::GradientOperator{T2, 3},
-                           x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
+        x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
     T = promote_type(T1, T2, T3)
     s = size(x_temp)
     stencil_1 = A.ops[1].low_boundary_coefs
@@ -600,7 +603,7 @@ function convolve_BC_left!(x_temp::AbstractArray{T1}, A::GradientOperator{T2, 3}
 end
 
 function convolve_BC_right!(x_temp::AbstractArray{T1}, A::GradientOperator{T2, 3},
-                            x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
+        x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
     T = promote_type(T1, T2, T3)
     s = size(x_temp)
     stencil_1 = A.ops[1].high_boundary_coefs
@@ -652,7 +655,7 @@ end
 
 ####### Divergence Convolutions for  3D Vectors #######
 function convolve_interior!(x_temp::AbstractArray{T1}, A::DivergenceOperator{T2, 3},
-                            x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
+        x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
     T = promote_type(T1, T2, T3)
     s = size(x_temp)
     bpc = A.ops[1].boundary_point_count
@@ -734,7 +737,7 @@ function convolve_interior!(x_temp::AbstractArray{T1}, A::DivergenceOperator{T2,
 end
 
 function convolve_BC_left!(x_temp::AbstractArray{T1}, A::DivergenceOperator{T2, 3},
-                           x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
+        x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
     T = promote_type(T1, T2, T3)
     s = size(x_temp)
     stencil_1 = A.ops[1].low_boundary_coefs
@@ -785,7 +788,7 @@ function convolve_BC_left!(x_temp::AbstractArray{T1}, A::DivergenceOperator{T2, 
 end
 
 function convolve_BC_right!(x_temp::AbstractArray{T1}, A::DivergenceOperator{T2, 3},
-                            x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
+        x::AbstractArray{T3}; overwrite = false) where {T1, T2, T3}
     T = promote_type(T1, T2, T3)
     s = size(x_temp)
     stencil_1 = A.ops[1].high_boundary_coefs
@@ -842,14 +845,14 @@ end
 # Against a standard vector, assume already padded and just apply the stencil
 
 function LinearAlgebra.mul!(x_temp::AbstractArray{T, 4}, A::CurlOperator,
-                            x::AbstractArray{T, 4}; overwrite = false) where {T <: Number}
+        x::AbstractArray{T, 4}; overwrite = false) where {T <: Number}
     convolve_BC_left!(x_temp, x, A, overwrite = overwrite)
     convolve_interior!(x_temp, x, A, overwrite = overwrite)
     convolve_BC_right!(x_temp, x, A, overwrite = overwrite)
 end
 
 function convolve_interior!(x_temp::AbstractArray{T, 4}, u::AbstractArray{T, 4},
-                            A::CurlOperator; overwrite = false) where {T <: Number}
+        A::CurlOperator; overwrite = false) where {T <: Number}
     s = size(x_temp)
     stencil_1 = A.ops[1].stencil_coefs
     stencil_2 = A.ops[2].stencil_coefs
@@ -952,7 +955,7 @@ function convolve_interior!(x_temp::AbstractArray{T, 4}, u::AbstractArray{T, 4},
 end
 
 function convolve_BC_left!(x_temp::AbstractArray{T, 4}, u::AbstractArray{T, 4},
-                           A::CurlOperator; overwrite = false) where {T <: Number}
+        A::CurlOperator; overwrite = false) where {T <: Number}
     s = size(x_temp)
     stencil_1 = A.ops[1].low_boundary_coefs
     stencil_2 = A.ops[2].low_boundary_coefs
@@ -1009,7 +1012,7 @@ function convolve_BC_left!(x_temp::AbstractArray{T, 4}, u::AbstractArray{T, 4},
 end
 
 function convolve_BC_right!(x_temp::AbstractArray{T, 4}, u::AbstractArray{T, 4},
-                            A::CurlOperator; overwrite = false) where {T <: Number}
+        A::CurlOperator; overwrite = false) where {T <: Number}
     s = size(x_temp)
     stencil_1 = A.ops[1].high_boundary_coefs
     stencil_2 = A.ops[2].high_boundary_coefs

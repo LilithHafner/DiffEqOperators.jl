@@ -1,5 +1,5 @@
 struct GhostDerivativeOperator{T, E <: AbstractDiffEqLinearOperator{T}, F <: AbstractBC{T}
-                               } <: AbstractDiffEqLinearOperator{T}
+} <: AbstractDiffEqLinearOperator{T}
     L::E
     Q::F
 end
@@ -13,12 +13,12 @@ function *(L::AbstractDiffEqCompositeOperator{T}, Q::AbstractBC{T}) where {T}
 end
 
 function LinearAlgebra.mul!(out::AbstractVecOrMat, A::GhostDerivativeOperator,
-                            u::AbstractVecOrMat)
+        u::AbstractVecOrMat)
     padded = A.Q * u  # assume: creates boundary padded array w/o realloc
     LinearAlgebra.mul!(out, A.L, padded)
 end
 function LinearAlgebra.mul!(out::AbstractArray, A::GhostDerivativeOperator,
-                            u::AbstractArray)
+        u::AbstractArray)
     padded = A.Q * u  # assume: creates boundary padded array w/o realloc
     LinearAlgebra.mul!(out, A.L, padded)
 end

@@ -20,7 +20,7 @@ function fourth_deriv_approx_stencil(N)
     A[2, 1:8] = [2 / 3 -11 / 6 0.0 31 / 6 -22 / 3 4.5 -4 / 3 1 / 6]
 
     A[N - 1, (N - 5):end] = reverse([2 / 3 -11 / 6 0.0 31 / 6 -22 / 3 4.5 -4 / 3 1 / 6],
-                                    dims = 2)
+        dims = 2)
     A[N, (N - 5):end] = reverse([3.5 -56 / 3 42.5 -54.0 251 / 6 -20.0 5.5 -2 / 3], dims = 2)
 
     for i in 3:(N - 2)

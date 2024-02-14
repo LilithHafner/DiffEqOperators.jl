@@ -4,12 +4,12 @@ using LinearAlgebra, DiffEqOperators, Test, Parameters
 
 #parameters
 params = @with_kw (μ = -0.1, # constant negative drift
-                   σ = 0.1,
-                   ρ = 0.05,
-                   M = 3, # size of grid (interior points)
-                   x̄ = range(0.0, 1.0, length = (M + 2)),
-                   x = x̄[2:(end - 1)],
-                   S = 3.0)
+    σ = 0.1,
+    ρ = 0.05,
+    M = 3, # size of grid (interior points)
+    x̄ = range(0.0, 1.0, length = (M + 2)),
+    x = x̄[2:(end - 1)],
+    S = 3.0)
 p = params()
 
 #----------------------------------
@@ -189,8 +189,8 @@ function DEO_absorbing_bc(pi_profit, params)
     # solve the value function
     v = L_bc \ pi_profit.(params.x)
     return (v = v, L_bc = L_bc, Lₓbc = Lₓbc, L₁₋bc = Array(L1 * Q)[1] ./ params.μ,
-            L₂bc = Array(L2 * Q)[1],
-            pi_profit_star = pi_profit.(params.x), pi_profit = pi_profit.(params.x))
+        L₂bc = Array(L2 * Q)[1],
+        pi_profit_star = pi_profit.(params.x), pi_profit = pi_profit.(params.x))
 end
 
 p = params(x̄ = range(0.0, 1.0, length = (p.M + 2)))

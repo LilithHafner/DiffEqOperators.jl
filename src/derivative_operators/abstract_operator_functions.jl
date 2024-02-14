@@ -112,7 +112,7 @@ end
 end
 
 @inline function getindex(A::AbstractDerivativeOperator{T}, rng::UnitRange{Int},
-                          cng::UnitRange{Int}) where {T}
+        cng::UnitRange{Int}) where {T}
     return BandedMatrix(A)[rng, cng]
 end
 
@@ -175,14 +175,14 @@ function *(coeff_func::Function, A::DerivativeOperator{T, N, Wind}) where {T, N,
     coefficients = A.coefficients === nothing ? zeros(T, A.len) : A.coefficients
 
     DerivativeOperator{T, N, Wind, typeof(A.dx), typeof(A.stencil_coefs),
-                       typeof(A.low_boundary_coefs), typeof(coefficients),
-                       typeof(coeff_func)}(A.derivative_order, A.approximation_order,
-                                           A.dx, A.len, A.stencil_length,
-                                           A.stencil_coefs,
-                                           A.boundary_stencil_length,
-                                           A.boundary_point_count,
-                                           A.low_boundary_coefs,
-                                           A.high_boundary_coefs, coefficients, coeff_func)
+        typeof(A.low_boundary_coefs), typeof(coefficients),
+        typeof(coeff_func)}(A.derivative_order, A.approximation_order,
+        A.dx, A.len, A.stencil_length,
+        A.stencil_coefs,
+        A.boundary_stencil_length,
+        A.boundary_point_count,
+        A.low_boundary_coefs,
+        A.high_boundary_coefs, coefficients, coeff_func)
 end
 
 ################################################################################

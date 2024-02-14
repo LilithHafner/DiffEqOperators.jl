@@ -15,8 +15,8 @@ using DiffEqOperators, Test, LinearAlgebra
 
     # Explicit stencil for L2
     M = Matrix(Tridiagonal([1.0 for i in 1:(N - 1)],
-                           [-2.0 for i in 1:N],
-                           [1.0 for i in 1:(N - 1)]))
+        [-2.0 for i in 1:N],
+        [1.0 for i in 1:(N - 1)]))
 
     # Insert periodic BC
     M[end, 1] = 1.0

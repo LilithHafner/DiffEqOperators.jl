@@ -8,14 +8,14 @@ v = rand(300)
 du = similar(x)
 
 cache1 = ForwardDiff.Dual{typeof(ForwardDiff.Tag(SparseDiffTools.DeivVecTag(), eltype(x))),
-                          eltype(x), 1
-                          }.(x, ForwardDiff.Partials.(tuple.(reshape(v, size(x)))))
+    eltype(x), 1
+}.(x, ForwardDiff.Partials.(tuple.(reshape(v, size(x)))))
 cache2 = ForwardDiff.Dual{typeof(ForwardDiff.Tag(SparseDiffTools.DeivVecTag(), eltype(x))),
-                          eltype(x), 1
-                          }.(x, ForwardDiff.Partials.(tuple.(reshape(v, size(x)))))
+    eltype(x), 1
+}.(x, ForwardDiff.Partials.(tuple.(reshape(v, size(x)))))
 @test num_jacvec!(du, f, x, v)≈ForwardDiff.jacobian(f, similar(x), x) * v rtol=1e-6
 @test num_jacvec!(du, f, x, v, similar(v),
-                  similar(v))≈
+    similar(v))≈
 ForwardDiff.jacobian(f, similar(x), x) * v rtol=1e-6
 @test num_jacvec(f, x, v)≈ForwardDiff.jacobian(f, similar(x), x) * v rtol=1e-6
 
@@ -80,7 +80,7 @@ u0 = [1.0; 0.0; 0.0]
 tspan = (0.0, 100.0)
 ff1 = ODEFunction(lorenz, jac_prototype = JacVecOperator{Float64}(lorenz, u0))
 ff2 = ODEFunction(lorenz,
-                  jac_prototype = JacVecOperator{Float64}(lorenz, u0, autodiff = false))
+    jac_prototype = JacVecOperator{Float64}(lorenz, u0, autodiff = false))
 
 for ff in [ff1, ff2]
     prob = ODEProblem(ff, u0, tspan)
@@ -88,5 +88,6 @@ for ff in [ff1, ff2]
     @test solve(prob, TRBDF2(linsolve = KrylovJL_GMRES())).retcode == ReturnCode.Success
     @test solve(prob, Exprb32()).retcode == ReturnCode.Success
     @test sol = solve(prob, Rosenbrock23()).retcode == ReturnCode.Success
-    @test sol = solve(prob, Rosenbrock23(linsolve = KrylovJL_GMRES())).retcode == ReturnCode.Success
+    @test sol = solve(prob, Rosenbrock23(linsolve = KrylovJL_GMRES())).retcode ==
+                ReturnCode.Success
 end

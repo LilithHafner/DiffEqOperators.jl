@@ -32,10 +32,10 @@ struct nonlinear_diffusion!{N} end
 struct nonlinear_diffusion{N} end
 
 function nonlinear_diffusion!{N}(du::AbstractVector{T}, second_differential_order::Int,
-                                 first_differential_order::Int, approx_order::Int,
-                                 p::AbstractVector{T}, q::AbstractVector{T},
-                                 dx::Union{T, AbstractVector{T}, Real},
-                                 nknots::Int) where {T <: Real, N}
+        first_differential_order::Int, approx_order::Int,
+        p::AbstractVector{T}, q::AbstractVector{T},
+        dx::Union{T, AbstractVector{T}, Real},
+        nknots::Int) where {T <: Real, N}
     #q is given by bc*u , u being the unknown function
     #p is given as some function of q , p being the diffusion coefficient
 
@@ -55,32 +55,32 @@ function nonlinear_diffusion!{N}(du::AbstractVector{T}, second_differential_orde
         du .= du .+
               binomial(second_differential_order, l) *
               (CenteredDifference{N}(l + first_differential_order, approx_order, dx,
-                                     nknots) * q) .*
+            nknots) * q) .*
               (CenteredDifference{N}(second_differential_order - l, approx_order, dx,
-                                     nknots) * p)
+            nknots) * p)
     end
 
     du .= du .+
           (CenteredDifference{N}(first_differential_order + second_differential_order,
-                                 approx_order, dx, nknots) * q) .* p[2:(nknots + 1)]
+        approx_order, dx, nknots) * q) .* p[2:(nknots + 1)]
 end
 
 # An out of place workaround for the mutating version
 function nonlinear_diffusion{N}(second_differential_order::Int,
-                                first_differential_order::Int, approx_order::Int,
-                                p::AbstractVector{T}, q::AbstractVector{T},
-                                dx::Union{T, AbstractVector{T}, Real},
-                                nknots::Int) where {T <: Real, N}
+        first_differential_order::Int, approx_order::Int,
+        p::AbstractVector{T}, q::AbstractVector{T},
+        dx::Union{T, AbstractVector{T}, Real},
+        nknots::Int) where {T <: Real, N}
     du = similar(q, length(q) - 2)
     return nonlinear_diffusion!{N}(du, second_differential_order, first_differential_order,
-                                   approx_order, p, q, dx, nknots)
+        approx_order, p, q, dx, nknots)
 end
 
 struct CenteredDifference{N} end
 
 function CenteredDifference{N}(derivative_order::Int,
-                               approximation_order::Int, dx::T,
-                               len::Int, coeff_func = 1) where {T <: Real, N}
+        approximation_order::Int, dx::T,
+        len::Int, coeff_func = 1) where {T <: Real, N}
     @assert approximation_order>1 "approximation_order must be greater than 1."
     stencil_length = derivative_order + approximation_order - 1 +
                      (derivative_order + approximation_order) % 2
@@ -96,24 +96,26 @@ function CenteredDifference{N}(derivative_order::Int,
     R_boundary_deriv_spots = right_boundary_x[2:div(stencil_length, 2)]
 
     stencil_coefs = convert(SVector{stencil_length, T},
-                            (1 / dx^derivative_order) *
-                            calculate_weights(derivative_order, zero(T), dummy_x))
-    _low_boundary_coefs = SVector{boundary_stencil_length, T}[convert(SVector{
-                                                                              boundary_stencil_length,
-                                                                              T},
-                                                                      (1 /
-                                                                       dx^derivative_order) *
-                                                                      calculate_weights(derivative_order,
-                                                                                        oneunit(T) *
-                                                                                        x0,
-                                                                                        left_boundary_x))
+        (1 / dx^derivative_order) *
+        calculate_weights(derivative_order, zero(T), dummy_x))
+    _low_boundary_coefs = SVector{boundary_stencil_length, T}[convert(
+                                                                  SVector{
+                                                                      boundary_stencil_length,
+                                                                      T},
+                                                                  (1 /
+                                                                   dx^derivative_order) *
+                                                                  calculate_weights(
+                                                                      derivative_order,
+                                                                      oneunit(T) *
+                                                                      x0,
+                                                                      left_boundary_x))
                                                               for x0 in L_boundary_deriv_spots]
     low_boundary_coefs = convert(SVector{boundary_point_count}, _low_boundary_coefs)
 
     # _high_boundary_coefs    = SVector{boundary_stencil_length, T}[convert(SVector{boundary_stencil_length, T}, (1/dx^derivative_order) * calculate_weights(derivative_order, oneunit(T)*x0, reverse(right_boundary_x))) for x0 in R_boundary_deriv_spots]
     high_boundary_coefs = convert(SVector{boundary_point_count},
-                                  reverse(map(reverse,
-                                              _low_boundary_coefs * (-1)^derivative_order)))
+        reverse(map(reverse,
+            _low_boundary_coefs * (-1)^derivative_order)))
 
     offside = 0
 
@@ -122,20 +124,20 @@ function CenteredDifference{N}(derivative_order::Int,
     compute_coeffs!(coeff_func, coefficients)
 
     DerivativeOperator{T, N, false, T, typeof(stencil_coefs),
-                       typeof(low_boundary_coefs), typeof(high_boundary_coefs),
-                       typeof(coefficients),
-                       typeof(coeff_func)}(derivative_order, approximation_order, dx, len,
-                                           stencil_length,
-                                           stencil_coefs,
-                                           boundary_stencil_length,
-                                           boundary_point_count,
-                                           low_boundary_coefs,
-                                           high_boundary_coefs, offside, coefficients,
-                                           coeff_func)
+        typeof(low_boundary_coefs), typeof(high_boundary_coefs),
+        typeof(coefficients),
+        typeof(coeff_func)}(derivative_order, approximation_order, dx, len,
+        stencil_length,
+        stencil_coefs,
+        boundary_stencil_length,
+        boundary_point_count,
+        low_boundary_coefs,
+        high_boundary_coefs, offside, coefficients,
+        coeff_func)
 end
 
 function generate_coordinates(i::Int, stencil_x, dummy_x,
-                              dx::AbstractVector{T}) where {T <: Real}
+        dx::AbstractVector{T}) where {T <: Real}
     len = length(stencil_x)
     stencil_x .= stencil_x .* zero(T)
     for idx in 1:div(len, 2)
@@ -148,8 +150,8 @@ function generate_coordinates(i::Int, stencil_x, dummy_x,
 end
 
 function CenteredDifference{N}(derivative_order::Int,
-                               approximation_order::Int, dx::AbstractVector{T},
-                               len::Int, coeff_func = 1) where {T <: Real, N}
+        approximation_order::Int, dx::AbstractVector{T},
+        len::Int, coeff_func = 1) where {T <: Real, N}
     stencil_length = derivative_order + approximation_order - 1 +
                      (derivative_order + approximation_order) % 2
     boundary_stencil_length = derivative_order + approximation_order
@@ -164,24 +166,28 @@ function CenteredDifference{N}(derivative_order::Int,
     deriv_spots = (-div(stencil_length, 2) + 1):-1
 
     stencil_coefs = [convert(SVector{stencil_length, T},
-                             calculate_weights(derivative_order, zero(T),
-                                               generate_coordinates(i, stencil_x, dummy_x,
-                                                                    dx)))
+                         calculate_weights(derivative_order, zero(T),
+                             generate_coordinates(i, stencil_x, dummy_x,
+                                 dx)))
                      for i in interior_x]
-    _low_boundary_coefs = SVector{boundary_stencil_length, T}[convert(SVector{
-                                                                              boundary_stencil_length,
-                                                                              T},
-                                                                      calculate_weights(derivative_order,
-                                                                                        low_boundary_x[i + 1],
-                                                                                        low_boundary_x))
+    _low_boundary_coefs = SVector{boundary_stencil_length, T}[convert(
+                                                                  SVector{
+                                                                      boundary_stencil_length,
+                                                                      T},
+                                                                  calculate_weights(
+                                                                      derivative_order,
+                                                                      low_boundary_x[i + 1],
+                                                                      low_boundary_x))
                                                               for i in 1:boundary_point_count]
     low_boundary_coefs = convert(SVector{boundary_point_count}, _low_boundary_coefs)
-    _high_boundary_coefs = SVector{boundary_stencil_length, T}[convert(SVector{
-                                                                               boundary_stencil_length,
-                                                                               T},
-                                                                       calculate_weights(derivative_order,
-                                                                                         high_boundary_x[end - i],
-                                                                                         high_boundary_x))
+    _high_boundary_coefs = SVector{boundary_stencil_length, T}[convert(
+                                                                   SVector{
+                                                                       boundary_stencil_length,
+                                                                       T},
+                                                                   calculate_weights(
+                                                                       derivative_order,
+                                                                       high_boundary_x[end - i],
+                                                                       high_boundary_x))
                                                                for i in boundary_point_count:-1:1]
     high_boundary_coefs = convert(SVector{boundary_point_count}, _high_boundary_coefs)
 
@@ -192,16 +198,16 @@ function CenteredDifference{N}(derivative_order::Int,
     compute_coeffs!(coeff_func, coefficients)
 
     DerivativeOperator{T, N, false, typeof(dx), typeof(stencil_coefs),
-                       typeof(low_boundary_coefs), typeof(high_boundary_coefs),
-                       typeof(coefficients),
-                       typeof(coeff_func)}(derivative_order, approximation_order, dx,
-                                           len, stencil_length,
-                                           stencil_coefs,
-                                           boundary_stencil_length,
-                                           boundary_point_count,
-                                           low_boundary_coefs,
-                                           high_boundary_coefs, offside, coefficients,
-                                           coeff_func)
+        typeof(low_boundary_coefs), typeof(high_boundary_coefs),
+        typeof(coefficients),
+        typeof(coeff_func)}(derivative_order, approximation_order, dx,
+        len, stencil_length,
+        stencil_coefs,
+        boundary_stencil_length,
+        boundary_point_count,
+        low_boundary_coefs,
+        high_boundary_coefs, offside, coefficients,
+        coeff_func)
 end
 
 # TODO: Set weight to zero if its below a certain threshold
@@ -209,7 +215,7 @@ end
 A helper function to compute the coefficients of a derivative operator including the boundary coefficients in the centered scheme.
 """
 function CompleteCenteredDifference(derivative_order::Int,
-                                    approximation_order::Int, dx::T) where {T <: Real, N}
+        approximation_order::Int, dx::T) where {T <: Real, N}
     @assert approximation_order>1 "approximation_order must be greater than 1."
     stencil_length = derivative_order + approximation_order - 1 +
                      (derivative_order + approximation_order) % 2
@@ -224,44 +230,46 @@ function CompleteCenteredDifference(derivative_order::Int,
     L_boundary_deriv_spots = left_boundary_x[1:div(stencil_length, 2)]
 
     stencil_coefs = convert(SVector{stencil_length, T},
-                            (1 / dx^derivative_order) *
-                            calculate_weights(derivative_order, zero(T), dummy_x))
-    _low_boundary_coefs = SVector{boundary_stencil_length, T}[convert(SVector{
-                                                                              boundary_stencil_length,
-                                                                              T},
-                                                                      (1 /
-                                                                       dx^derivative_order) *
-                                                                      calculate_weights(derivative_order,
-                                                                                        oneunit(T) *
-                                                                                        x0,
-                                                                                        left_boundary_x))
+        (1 / dx^derivative_order) *
+        calculate_weights(derivative_order, zero(T), dummy_x))
+    _low_boundary_coefs = SVector{boundary_stencil_length, T}[convert(
+                                                                  SVector{
+                                                                      boundary_stencil_length,
+                                                                      T},
+                                                                  (1 /
+                                                                   dx^derivative_order) *
+                                                                  calculate_weights(
+                                                                      derivative_order,
+                                                                      oneunit(T) *
+                                                                      x0,
+                                                                      left_boundary_x))
                                                               for x0 in L_boundary_deriv_spots]
     low_boundary_coefs = convert(SVector{boundary_point_count}, vcat(_low_boundary_coefs))
 
     # _high_boundary_coefs    = SVector{boundary_stencil_length, T}[convert(SVector{boundary_stencil_length, T}, (1/dx^derivative_order) * calculate_weights(derivative_order, oneunit(T)*x0, reverse(right_boundary_x))) for x0 in R_boundary_deriv_spots]
     high_boundary_coefs = convert(SVector{boundary_point_count},
-                                  [reverse(v) * (-1)^derivative_order
-                                   for v in _low_boundary_coefs])
+        [reverse(v) * (-1)^derivative_order
+         for v in _low_boundary_coefs])
 
     offside = 0
 
     coefficients = nothing
 
     DerivativeOperator{T, Nothing, false, T, typeof(stencil_coefs),
-                       typeof(low_boundary_coefs), typeof(high_boundary_coefs),
-                       typeof(coefficients),
-                       Nothing}(derivative_order, approximation_order, dx, 1,
-                                stencil_length,
-                                stencil_coefs,
-                                boundary_stencil_length,
-                                boundary_point_count,
-                                low_boundary_coefs,
-                                high_boundary_coefs, offside, coefficients, nothing)
+        typeof(low_boundary_coefs), typeof(high_boundary_coefs),
+        typeof(coefficients),
+        Nothing}(derivative_order, approximation_order, dx, 1,
+        stencil_length,
+        stencil_coefs,
+        boundary_stencil_length,
+        boundary_point_count,
+        low_boundary_coefs,
+        high_boundary_coefs, offside, coefficients, nothing)
 end
 
 function CompleteCenteredDifference(derivative_order::Int,
-                                    approximation_order::Int,
-                                    x::AbstractVector{T}) where {T <: Real, N}
+        approximation_order::Int,
+        x::AbstractVector{T}) where {T <: Real, N}
     stencil_length = derivative_order + approximation_order - 1 +
                      (derivative_order + approximation_order) % 2
     boundary_stencil_length = derivative_order + approximation_order
@@ -277,46 +285,50 @@ function CompleteCenteredDifference(derivative_order::Int,
     deriv_spots = (-div(stencil_length, 2) + 1):-1
 
     stencil_coefs = [convert(SVector{stencil_length, T},
-                             calculate_weights(derivative_order, x[i],
-                                               x[(i - endpoint):(i + endpoint)]))
+                         calculate_weights(derivative_order, x[i],
+                             x[(i - endpoint):(i + endpoint)]))
                      for i in interior_x]
-    low_boundary_coefs = SVector{boundary_stencil_length, T}[convert(SVector{
-                                                                             boundary_stencil_length,
-                                                                             T},
-                                                                     calculate_weights(derivative_order,
-                                                                                       low_boundary_x[i + 1],
-                                                                                       low_boundary_x))
+    low_boundary_coefs = SVector{boundary_stencil_length, T}[convert(
+                                                                 SVector{
+                                                                     boundary_stencil_length,
+                                                                     T},
+                                                                 calculate_weights(
+                                                                     derivative_order,
+                                                                     low_boundary_x[i + 1],
+                                                                     low_boundary_x))
                                                              for i in 0:(boundary_point_count - 1)]
 
-    high_boundary_coefs = SVector{boundary_stencil_length, T}[convert(SVector{
-                                                                              boundary_stencil_length,
-                                                                              T},
-                                                                      calculate_weights(derivative_order,
-                                                                                        high_boundary_x[end - i],
-                                                                                        high_boundary_x))
+    high_boundary_coefs = SVector{boundary_stencil_length, T}[convert(
+                                                                  SVector{
+                                                                      boundary_stencil_length,
+                                                                      T},
+                                                                  calculate_weights(
+                                                                      derivative_order,
+                                                                      high_boundary_x[end - i],
+                                                                      high_boundary_x))
                                                               for i in 0:(boundary_point_count - 1)]
 
     offside = 0
     coefficients = nothing
 
     DerivativeOperator{eltype(x), Nothing, false, typeof(dx), typeof(stencil_coefs),
-                       typeof(low_boundary_coefs), typeof(high_boundary_coefs),
-                       typeof(coefficients),
-                       Nothing}(derivative_order, approximation_order, dx,
-                                len, stencil_length,
-                                stencil_coefs,
-                                boundary_stencil_length,
-                                boundary_point_count,
-                                low_boundary_coefs,
-                                high_boundary_coefs, offside, coefficients, nothing)
+        typeof(low_boundary_coefs), typeof(high_boundary_coefs),
+        typeof(coefficients),
+        Nothing}(derivative_order, approximation_order, dx,
+        len, stencil_length,
+        stencil_coefs,
+        boundary_stencil_length,
+        boundary_point_count,
+        low_boundary_coefs,
+        high_boundary_coefs, offside, coefficients, nothing)
 end
 
 """
 A helper function to compute the coefficients of a derivative operator including the boundary coefficients in the half offset centered scheme. See table 2 in https://web.njit.edu/~jiang/math712/fornberg.pdf
 """
 function CompleteHalfCenteredDifference(derivative_order::Int,
-                                        approximation_order::Int,
-                                        dx::T) where {T <: Real, N}
+        approximation_order::Int,
+        dx::T) where {T <: Real, N}
     @assert approximation_order>1 "approximation_order must be greater than 1."
     centered_stencil_length = approximation_order + 2 * Int(floor(derivative_order / 2)) +
                               (approximation_order % 2)
@@ -335,14 +347,14 @@ function CompleteHalfCenteredDifference(derivative_order::Int,
     L_boundary_deriv_spots = xoffset[1:div(centered_stencil_length, 2)]
 
     stencil_coefs = convert(SVector{centered_stencil_length, T},
-                            (1 / dx^derivative_order) *
-                            calculate_weights(derivative_order, convert(T, 0.5), dummy_x))
+        (1 / dx^derivative_order) *
+        calculate_weights(derivative_order, convert(T, 0.5), dummy_x))
     # For each boundary point, for each tappoint in the half offset central difference stencil, we need to calculate the coefficients for the stencil.
 
     _low_boundary_coefs = [convert(SVector{boundary_stencil_length, T},
-                                   (1 / dx^derivative_order) *
-                                   calculate_weights(derivative_order, offset,
-                                                     left_boundary_x))
+                               (1 / dx^derivative_order) *
+                               calculate_weights(derivative_order, offset,
+                                   left_boundary_x))
                            for offset in L_boundary_deriv_spots]
     low_boundary_coefs = convert(SVector{boundary_point_count}, _low_boundary_coefs)
 
@@ -355,20 +367,20 @@ function CompleteHalfCenteredDifference(derivative_order::Int,
     coefficients = nothing
 
     DerivativeOperator{T, Nothing, false, T, typeof(stencil_coefs),
-                       typeof(low_boundary_coefs), typeof(high_boundary_coefs),
-                       typeof(coefficients), Nothing}(derivative_order, approximation_order,
-                                                      dx, 1, centered_stencil_length,
-                                                      stencil_coefs,
-                                                      boundary_stencil_length,
-                                                      boundary_point_count,
-                                                      low_boundary_coefs,
-                                                      high_boundary_coefs, offside,
-                                                      coefficients, nothing)
+        typeof(low_boundary_coefs), typeof(high_boundary_coefs),
+        typeof(coefficients), Nothing}(derivative_order, approximation_order,
+        dx, 1, centered_stencil_length,
+        stencil_coefs,
+        boundary_stencil_length,
+        boundary_point_count,
+        low_boundary_coefs,
+        high_boundary_coefs, offside,
+        coefficients, nothing)
 end
 
 function CompleteHalfCenteredDifference(derivative_order::Int,
-                                        approximation_order::Int,
-                                        x::T) where {T <: AbstractVector{<:Real}, N}
+        approximation_order::Int,
+        x::T) where {T <: AbstractVector{<:Real}, N}
     @assert approximation_order>1 "approximation_order must be greater than 1."
     centered_stencil_length = approximation_order + 2 * Int(floor(derivative_order / 2)) +
                               (approximation_order % 2)
@@ -390,19 +402,19 @@ function CompleteHalfCenteredDifference(derivative_order::Int,
     R_boundary_deriv_spots = hx[length(hx):-1:(length(hx) - div(centered_stencil_length, 2) + 1)]
 
     stencil_coefs = [convert(SVector{centered_stencil_length, eltype(x)},
-                             calculate_weights(derivative_order, hx[i],
-                                               x[(i - endpoint + 1):(i + endpoint)]))
+                         calculate_weights(derivative_order, hx[i],
+                             x[(i - endpoint + 1):(i + endpoint)]))
                      for i in (endpoint + 1):(length(x) - endpoint)]
     # For each boundary point, for each tappoint in the half offset central difference stencil, we need to calculate the coefficients for the stencil.
 
     low_boundary_coefs = [convert(SVector{boundary_stencil_length, eltype(x)},
-                                  calculate_weights(derivative_order, offset,
-                                                    low_boundary_x))
+                              calculate_weights(derivative_order, offset,
+                                  low_boundary_x))
                           for offset in L_boundary_deriv_spots]
 
     high_boundary_coefs = [convert(SVector{boundary_stencil_length, eltype(x)},
-                                   calculate_weights(derivative_order, offset,
-                                                     high_boundary_x))
+                               calculate_weights(derivative_order, offset,
+                                   high_boundary_x))
                            for offset in R_boundary_deriv_spots]
 
     # _high_boundary_coefs    = SVector{boundary_stencil_length, T}[convert(SVector{boundary_stencil_length, T}, (1/dx^derivative_order) * calculate_weights(derivative_order, oneunit(T)*x0, reverse(right_boundary_x))) for x0 in R_boundary_deriv_spots]
@@ -411,15 +423,15 @@ function CompleteHalfCenteredDifference(derivative_order::Int,
     coefficients = nothing
 
     DerivativeOperator{eltype(x), Nothing, false, typeof(dx), typeof(stencil_coefs),
-                       typeof(low_boundary_coefs), typeof(high_boundary_coefs),
-                       typeof(coefficients), Nothing}(derivative_order, approximation_order,
-                                                      dx, 1, centered_stencil_length,
-                                                      stencil_coefs,
-                                                      boundary_stencil_length,
-                                                      boundary_point_count,
-                                                      low_boundary_coefs,
-                                                      high_boundary_coefs, offside,
-                                                      coefficients, nothing)
+        typeof(low_boundary_coefs), typeof(high_boundary_coefs),
+        typeof(coefficients), Nothing}(derivative_order, approximation_order,
+        dx, 1, centered_stencil_length,
+        stencil_coefs,
+        boundary_stencil_length,
+        boundary_point_count,
+        low_boundary_coefs,
+        high_boundary_coefs, offside,
+        coefficients, nothing)
 end
 
 struct UpwindDifference{N} end
@@ -452,9 +464,9 @@ julia> Array(L2 * Q)[1]
 
 """
 function UpwindDifference{N}(derivative_order::Int,
-                             approximation_order::Int, dx::T,
-                             len::Int, coeff_func = 1;
-                             offside::Int = 0) where {T <: Real, N}
+        approximation_order::Int, dx::T,
+        len::Int, coeff_func = 1;
+        offside::Int = 0) where {T <: Real, N}
     @assert offside>-1 "Number of offside points should be non-negative"
     @assert offside<=div(derivative_order + approximation_order - 1, 2) "Number of offside points should not exceed the primary wind points"
 
@@ -465,57 +477,62 @@ function UpwindDifference{N}(derivative_order::Int,
     # TODO: Clean up the implementation here so that it is more readable and easier to extend in the future
     dummy_x = (0.0 - offside):(stencil_length - 1.0 - offside)
     stencil_coefs = convert(SVector{stencil_length, T},
-                            (1 / dx^derivative_order) *
-                            calculate_weights(derivative_order, 0.0, dummy_x))
+        (1 / dx^derivative_order) *
+        calculate_weights(derivative_order, 0.0, dummy_x))
 
     low_boundary_x = 0.0:(boundary_stencil_length - 1)
     L_boundary_deriv_spots = 1.0:(boundary_stencil_length - 2.0 - offside)
-    _low_boundary_coefs = SVector{boundary_stencil_length, T}[convert(SVector{
-                                                                              boundary_stencil_length,
-                                                                              T},
-                                                                      (1 /
-                                                                       dx^derivative_order) *
-                                                                      calculate_weights(derivative_order,
-                                                                                        oneunit(T) *
-                                                                                        x0,
-                                                                                        low_boundary_x))
+    _low_boundary_coefs = SVector{boundary_stencil_length, T}[convert(
+                                                                  SVector{
+                                                                      boundary_stencil_length,
+                                                                      T},
+                                                                  (1 /
+                                                                   dx^derivative_order) *
+                                                                  calculate_weights(
+                                                                      derivative_order,
+                                                                      oneunit(T) *
+                                                                      x0,
+                                                                      low_boundary_x))
                                                               for x0 in L_boundary_deriv_spots]
     low_boundary_coefs = convert(SVector{boundary_point_count}, _low_boundary_coefs)
 
     high_boundary_x = 0.0:-1.0:(-(boundary_stencil_length - 1.0))
     R_boundary_deriv_spots = -1.0:-1.0:(-(boundary_stencil_length - 2.0))
-    _high_boundary_coefs = SVector{boundary_stencil_length, T}[convert(SVector{
-                                                                               boundary_stencil_length,
-                                                                               T},
-                                                                       ((-1 / dx)^derivative_order) *
-                                                                       calculate_weights(derivative_order,
-                                                                                         oneunit(T) *
-                                                                                         x0,
-                                                                                         high_boundary_x))
+    _high_boundary_coefs = SVector{boundary_stencil_length, T}[convert(
+                                                                   SVector{
+                                                                       boundary_stencil_length,
+                                                                       T},
+                                                                   ((-1 /
+                                                                     dx)^derivative_order) *
+                                                                   calculate_weights(
+                                                                       derivative_order,
+                                                                       oneunit(T) *
+                                                                       x0,
+                                                                       high_boundary_x))
                                                                for x0 in R_boundary_deriv_spots]
     high_boundary_coefs = convert(SVector{boundary_point_count + offside},
-                                  _high_boundary_coefs)
+        _high_boundary_coefs)
 
     coefficients = zeros(T, len)
     compute_coeffs!(coeff_func, coefficients)
 
     DerivativeOperator{T, N, true, T, typeof(stencil_coefs),
-                       typeof(low_boundary_coefs), typeof(high_boundary_coefs), Vector{T},
-                       typeof(coeff_func)}(derivative_order, approximation_order, dx, len,
-                                           stencil_length,
-                                           stencil_coefs,
-                                           boundary_stencil_length,
-                                           boundary_point_count,
-                                           low_boundary_coefs,
-                                           high_boundary_coefs, offside, coefficients,
-                                           coeff_func)
+        typeof(low_boundary_coefs), typeof(high_boundary_coefs), Vector{T},
+        typeof(coeff_func)}(derivative_order, approximation_order, dx, len,
+        stencil_length,
+        stencil_coefs,
+        boundary_stencil_length,
+        boundary_point_count,
+        low_boundary_coefs,
+        high_boundary_coefs, offside, coefficients,
+        coeff_func)
 end
 
 # TODO implement the non-uniform grid
 function UpwindDifference{N}(derivative_order::Int,
-                             approximation_order::Int, dx::AbstractVector{T},
-                             len::Int, coeff_func = 1;
-                             offside::Int = 0) where {T <: Real, N}
+        approximation_order::Int, dx::AbstractVector{T},
+        len::Int, coeff_func = 1;
+        offside::Int = 0) where {T <: Real, N}
     @assert offside>-1 "Number of offside points should be non-negative"
     @assert offside<=div(derivative_order + approximation_order - 1, 2) "Number of offside points should not exceed the primary wind points"
 
@@ -529,96 +546,112 @@ function UpwindDifference{N}(derivative_order::Int,
 
     # compute low_boundary_coefs: low_boundary_coefs[upwind = 1 downwind = 2, index of point]
     if offside == 0
-        _upwind_coefs = SMatrix{1, boundary_point_count}([convert(SVector{
-                                                                          boundary_stencil_length,
-                                                                          T},
-                                                                  calculate_weights(derivative_order,
-                                                                                    x[i + 1],
-                                                                                    x[(i + 1):(i + boundary_stencil_length)]))
+        _upwind_coefs = SMatrix{1, boundary_point_count}([convert(
+                                                              SVector{
+                                                                  boundary_stencil_length,
+                                                                  T},
+                                                              calculate_weights(
+                                                                  derivative_order,
+                                                                  x[i + 1],
+                                                                  x[(i + 1):(i + boundary_stencil_length)]))
                                                           for i in 1:boundary_point_count])
     else
-        _upwind_coefs = SMatrix{1, boundary_point_count}(append!([convert(SVector{
-                                                                                  boundary_stencil_length,
-                                                                                  T},
-                                                                          calculate_weights(derivative_order,
-                                                                                            x[i + 1],
-                                                                                            x[1:boundary_stencil_length]))
-                                                                  for i in 1:(offside - 1)],
-                                                                 [convert(SVector{
-                                                                                  boundary_stencil_length,
-                                                                                  T},
-                                                                          calculate_weights(derivative_order,
-                                                                                            x[i + 1],
-                                                                                            x[(i + 1 - offside):(i + boundary_stencil_length - offside)]))
-                                                                  for i in offside:boundary_point_count]))
+        _upwind_coefs = SMatrix{1, boundary_point_count}(append!(
+            [convert(SVector{
+                     boundary_stencil_length,
+                     T},
+                 calculate_weights(derivative_order,
+                     x[i + 1],
+                     x[1:boundary_stencil_length]))
+             for i in 1:(offside - 1)],
+            [convert(SVector{
+                     boundary_stencil_length,
+                     T},
+                 calculate_weights(derivative_order,
+                     x[i + 1],
+                     x[(i + 1 - offside):(i + boundary_stencil_length - offside)]))
+             for i in offside:boundary_point_count]))
     end
-    _downwind_coefs = SMatrix{1, boundary_point_count}([convert(SVector{
-                                                                        boundary_stencil_length,
-                                                                        T},
-                                                                calculate_weights(derivative_order,
-                                                                                  x[i + 1],
-                                                                                  x[1:boundary_stencil_length]))
+    _downwind_coefs = SMatrix{1, boundary_point_count}([convert(
+                                                            SVector{
+                                                                boundary_stencil_length,
+                                                                T},
+                                                            calculate_weights(
+                                                                derivative_order,
+                                                                x[i + 1],
+                                                                x[1:boundary_stencil_length]))
                                                         for i in 1:boundary_point_count])
     low_boundary_coefs = [_upwind_coefs; _downwind_coefs]
 
     # compute stencil_coefs: low_boundary_coefs[upwind = 1 downwind = 2, index of point]
-    _upwind_coefs = SMatrix{1, len - 2 * boundary_point_count}([convert(SVector{
-                                                                                stencil_length,
-                                                                                T},
-                                                                        calculate_weights(derivative_order,
-                                                                                          x[i + 1],
-                                                                                          x[(i + 1 - offside):(i + stencil_length - offside)]))
+    _upwind_coefs = SMatrix{1, len - 2 * boundary_point_count}([convert(
+                                                                    SVector{
+                                                                        stencil_length,
+                                                                        T},
+                                                                    calculate_weights(
+                                                                        derivative_order,
+                                                                        x[i + 1],
+                                                                        x[(i + 1 - offside):(i + stencil_length - offside)]))
                                                                 for i in (boundary_point_count + 1):(len - boundary_point_count)])
-    _downwind_coefs = SMatrix{1, len - 2 * boundary_point_count}([convert(SVector{
-                                                                                  stencil_length,
-                                                                                  T},
-                                                                          calculate_weights(derivative_order,
-                                                                                            x[i + 1],
-                                                                                            x[(i - stencil_length + 2 + offside):(i + 1 + offside)]))
+    _downwind_coefs = SMatrix{1, len - 2 * boundary_point_count}([convert(
+                                                                      SVector{
+                                                                          stencil_length,
+                                                                          T},
+                                                                      calculate_weights(
+                                                                          derivative_order,
+                                                                          x[i + 1],
+                                                                          x[(i - stencil_length + 2 + offside):(i + 1 + offside)]))
                                                                   for i in (boundary_point_count + 1):(len - boundary_point_count)])
     stencil_coefs = [_upwind_coefs; _downwind_coefs]
 
     # compute high_boundary_coefs: low_boundary_coefs[upwind = 1 downwind = 2, index of point]
-    _upwind_coefs = SMatrix{1, boundary_point_count + offside}([convert(SVector{
-                                                                                boundary_stencil_length,
-                                                                                T},
-                                                                        calculate_weights(derivative_order,
-                                                                                          x[i + 1],
-                                                                                          x[(len - boundary_stencil_length + 3):(len + 2)]))
+    _upwind_coefs = SMatrix{1, boundary_point_count + offside}([convert(
+                                                                    SVector{
+                                                                        boundary_stencil_length,
+                                                                        T},
+                                                                    calculate_weights(
+                                                                        derivative_order,
+                                                                        x[i + 1],
+                                                                        x[(len - boundary_stencil_length + 3):(len + 2)]))
                                                                 for i in (len - boundary_point_count + 1 - offside):len])
     if offside == 0
-        _downwind_coefs = SMatrix{1, boundary_point_count}([convert(SVector{
-                                                                            boundary_stencil_length,
-                                                                            T},
-                                                                    calculate_weights(derivative_order,
-                                                                                      x[i + 1],
-                                                                                      x[(i - stencil_length + 2):(i + 1)]))
+        _downwind_coefs = SMatrix{1, boundary_point_count}([convert(
+                                                                SVector{
+                                                                    boundary_stencil_length,
+                                                                    T},
+                                                                calculate_weights(
+                                                                    derivative_order,
+                                                                    x[i + 1],
+                                                                    x[(i - stencil_length + 2):(i + 1)]))
                                                             for i in (len - boundary_point_count + 1):len])
     elseif offside == 1
-        _downwind_coefs = SMatrix{1, boundary_point_count + offside}([convert(SVector{
-                                                                                      boundary_stencil_length,
-                                                                                      T},
-                                                                              calculate_weights(derivative_order,
-                                                                                                x[i + 1],
-                                                                                                x[(i - stencil_length + 2 + offside):(i + 1 + offside)]))
+        _downwind_coefs = SMatrix{1, boundary_point_count + offside}([convert(
+                                                                          SVector{
+                                                                              boundary_stencil_length,
+                                                                              T},
+                                                                          calculate_weights(
+                                                                              derivative_order,
+                                                                              x[i + 1],
+                                                                              x[(i - stencil_length + 2 + offside):(i + 1 + offside)]))
                                                                       for i in (len - boundary_point_count + 1 - offside):(len - offside + 1)])
     else
-        _downwind_coefs = SMatrix{1, boundary_point_count + offside}(append!([convert(SVector{
-                                                                                              boundary_stencil_length,
-                                                                                              T
-                                                                                              },
-                                                                                      calculate_weights(derivative_order,
-                                                                                                        x[i + 1],
-                                                                                                        x[(i - stencil_length + 2 + offside):(i + 1 + offside)]))
-                                                                              for i in (len - boundary_point_count + 1 - offside):(len - offside + 1)],
-                                                                             [convert(SVector{
-                                                                                              boundary_stencil_length,
-                                                                                              T
-                                                                                              },
-                                                                                      calculate_weights(derivative_order,
-                                                                                                        x[i + 1],
-                                                                                                        x[(len - stencil_length + 3):(len + 2)]))
-                                                                              for i in (len - offside + 2):len]))
+        _downwind_coefs = SMatrix{1, boundary_point_count + offside}(append!(
+            [convert(SVector{
+                     boundary_stencil_length,
+                     T
+                 },
+                 calculate_weights(derivative_order,
+                     x[i + 1],
+                     x[(i - stencil_length + 2 + offside):(i + 1 + offside)]))
+             for i in (len - boundary_point_count + 1 - offside):(len - offside + 1)],
+            [convert(SVector{
+                     boundary_stencil_length,
+                     T
+                 },
+                 calculate_weights(derivative_order,
+                     x[i + 1],
+                     x[(len - stencil_length + 3):(len + 2)]))
+             for i in (len - offside + 2):len]))
     end
     high_boundary_coefs = [_upwind_coefs; _downwind_coefs]
 
@@ -627,23 +660,23 @@ function UpwindDifference{N}(derivative_order::Int,
     compute_coeffs!(coeff_func, coefficients)
 
     DerivativeOperator{T, N, true, typeof(dx), typeof(stencil_coefs),
-                       typeof(low_boundary_coefs), typeof(high_boundary_coefs), Vector{T},
-                       typeof(coeff_func)}(derivative_order, approximation_order, dx, len,
-                                           stencil_length,
-                                           stencil_coefs,
-                                           boundary_stencil_length,
-                                           boundary_point_count,
-                                           low_boundary_coefs,
-                                           high_boundary_coefs, offside, coefficients,
-                                           coeff_func)
+        typeof(low_boundary_coefs), typeof(high_boundary_coefs), Vector{T},
+        typeof(coeff_func)}(derivative_order, approximation_order, dx, len,
+        stencil_length,
+        stencil_coefs,
+        boundary_stencil_length,
+        boundary_point_count,
+        low_boundary_coefs,
+        high_boundary_coefs, offside, coefficients,
+        coeff_func)
 end
 
 """
 A helper function to compute the coefficients of a derivative operator including the boundary coefficients in the upwind scheme.
 """
 function CompleteUpwindDifference(derivative_order::Int,
-                                  approximation_order::Int, dx::T,
-                                  offside::Int = 0) where {T <: Real, N}
+        approximation_order::Int, dx::T,
+        offside::Int = 0) where {T <: Real, N}
     @assert offside>-1 "Number of offside points should be non-negative"
 
     stencil_length = derivative_order + approximation_order
@@ -654,53 +687,58 @@ function CompleteUpwindDifference(derivative_order::Int,
     # TODO: Clean up the implementation here so that it is more readable and easier to extend in the future
     dummy_x = (0.0 - offside):(stencil_length - 1.0 - offside)
     stencil_coefs = convert(SVector{stencil_length, T},
-                            (1 / dx^derivative_order) *
-                            calculate_weights(derivative_order, 0.0, dummy_x))
+        (1 / dx^derivative_order) *
+        calculate_weights(derivative_order, 0.0, dummy_x))
     low_boundary_x = 0.0:(boundary_stencil_length - 1)
     L_boundary_deriv_spots = 0.0:(low_boundary_point_count - 1)
-    _low_boundary_coefs = SVector{boundary_stencil_length, T}[convert(SVector{
-                                                                              boundary_stencil_length,
-                                                                              T},
-                                                                      (1 /
-                                                                       dx^derivative_order) *
-                                                                      calculate_weights(derivative_order,
-                                                                                        oneunit(T) *
-                                                                                        x0,
-                                                                                        low_boundary_x))
+    _low_boundary_coefs = SVector{boundary_stencil_length, T}[convert(
+                                                                  SVector{
+                                                                      boundary_stencil_length,
+                                                                      T},
+                                                                  (1 /
+                                                                   dx^derivative_order) *
+                                                                  calculate_weights(
+                                                                      derivative_order,
+                                                                      oneunit(T) *
+                                                                      x0,
+                                                                      low_boundary_x))
                                                               for x0 in L_boundary_deriv_spots]
     low_boundary_coefs = convert(SVector{low_boundary_point_count}, _low_boundary_coefs)
 
     high_boundary_x = 0.0:-1.0:(-(boundary_stencil_length - 1.0))
     R_boundary_deriv_spots = 0.0:-1.0:(-(high_boundary_point_count - 1.0))
-    _high_boundary_coefs = SVector{boundary_stencil_length, T}[convert(SVector{
-                                                                               boundary_stencil_length,
-                                                                               T},
-                                                                       ((-1 / dx)^derivative_order) *
-                                                                       calculate_weights(derivative_order,
-                                                                                         oneunit(T) *
-                                                                                         x0,
-                                                                                         high_boundary_x))
+    _high_boundary_coefs = SVector{boundary_stencil_length, T}[convert(
+                                                                   SVector{
+                                                                       boundary_stencil_length,
+                                                                       T},
+                                                                   ((-1 /
+                                                                     dx)^derivative_order) *
+                                                                   calculate_weights(
+                                                                       derivative_order,
+                                                                       oneunit(T) *
+                                                                       x0,
+                                                                       high_boundary_x))
                                                                for x0 in R_boundary_deriv_spots]
     high_boundary_coefs = convert(SVector{high_boundary_point_count},
-                                  reverse(_high_boundary_coefs))
+        reverse(_high_boundary_coefs))
 
     coefficients = nothing
 
     DerivativeOperator{T, Nothing, true, T, typeof(stencil_coefs),
-                       typeof(low_boundary_coefs), typeof(high_boundary_coefs), Nothing,
-                       Nothing}(derivative_order, approximation_order, dx, 1,
-                                stencil_length,
-                                stencil_coefs,
-                                boundary_stencil_length,
-                                high_boundary_point_count,
-                                low_boundary_coefs,
-                                high_boundary_coefs, offside, coefficients, nothing)
+        typeof(low_boundary_coefs), typeof(high_boundary_coefs), Nothing,
+        Nothing}(derivative_order, approximation_order, dx, 1,
+        stencil_length,
+        stencil_coefs,
+        boundary_stencil_length,
+        high_boundary_point_count,
+        low_boundary_coefs,
+        high_boundary_coefs, offside, coefficients, nothing)
 end
 
 # TODO implement the non-uniform grid
 function CompleteUpwindDifference(derivative_order::Int,
-                                  approximation_order::Int, x::AbstractVector{T},
-                                  offside::Int = 0) where {T <: Real, N}
+        approximation_order::Int, x::AbstractVector{T},
+        offside::Int = 0) where {T <: Real, N}
     @assert offside>-1 "Number of offside points should be non-negative"
 
     stencil_length = derivative_order + approximation_order
@@ -721,19 +759,19 @@ function CompleteUpwindDifference(derivative_order::Int,
     R_boundary_deriv_spots = x[(end - high_boundary_point_count + 1):end]
 
     stencil_coefs = [convert(SVector{stencil_length, eltype(x)},
-                             calculate_weights(derivative_order, x[i],
-                                               @view(x[(i - offside):(i + stencil_length - 1 - offside)])))
+                         calculate_weights(derivative_order, x[i],
+                             @view(x[(i - offside):(i + stencil_length - 1 - offside)])))
                      for i in (low_boundary_point_count + 1):(length(x) - high_boundary_point_count)]
     # For each boundary point, for each tappoint in the half offset central difference stencil, we need to calculate the coefficients for the stencil.
 
     low_boundary_coefs = [convert(SVector{boundary_stencil_length, eltype(x)},
-                                  calculate_weights(derivative_order, offset,
-                                                    low_boundary_x))
+                              calculate_weights(derivative_order, offset,
+                                  low_boundary_x))
                           for offset in L_boundary_deriv_spots]
 
     high_boundary_coefs = [convert(SVector{boundary_stencil_length, eltype(x)},
-                                   calculate_weights(derivative_order, offset,
-                                                     high_boundary_x))
+                               calculate_weights(derivative_order, offset,
+                                   high_boundary_x))
                            for offset in R_boundary_deriv_spots]
 
     # _high_boundary_coefs    = SVector{boundary_stencil_length, T}[convert(SVector{boundary_stencil_length, T}, (1/dx^derivative_order) * calculate_weights(derivative_order, oneunit(T)*x0, reverse(right_boundary_x))) for x0 in R_boundary_deriv_spots]
@@ -742,15 +780,15 @@ function CompleteUpwindDifference(derivative_order::Int,
     coefficients = nothing
 
     DerivativeOperator{eltype(x), Nothing, false, typeof(dx), typeof(stencil_coefs),
-                       typeof(low_boundary_coefs), typeof(high_boundary_coefs),
-                       typeof(coefficients), Nothing}(derivative_order, approximation_order,
-                                                      dx, 1, stencil_length,
-                                                      stencil_coefs,
-                                                      boundary_stencil_length,
-                                                      high_boundary_point_count,
-                                                      low_boundary_coefs,
-                                                      high_boundary_coefs, offside,
-                                                      coefficients, nothing)
+        typeof(low_boundary_coefs), typeof(high_boundary_coefs),
+        typeof(coefficients), Nothing}(derivative_order, approximation_order,
+        dx, 1, stencil_length,
+        stencil_coefs,
+        boundary_stencil_length,
+        high_boundary_point_count,
+        low_boundary_coefs,
+        high_boundary_coefs, offside,
+        coefficients, nothing)
 end
 
 CenteredDifference(args...) = CenteredDifference{1}(args...)
@@ -763,6 +801,6 @@ function ==(A1::DerivativeOperator, A2::DerivativeOperator)
     return all([eval(:($A1.$name == $A2.$name)) for name in fieldnames(DerivativeOperator)])
 end
 function Laplacian(aor::Int, dxyz::Union{NTuple{N, T}, NTuple{N, AbstractVector{T}}},
-                   s::NTuple{N, I}, coeff_func = nothing) where {T, N, I <: Int}
+        s::NTuple{N, I}, coeff_func = nothing) where {T, N, I <: Int}
     return sum(CenteredDifference{i}(2, aor, dxyz[i], s[i], coeff_func) for i in 1:N)
 end

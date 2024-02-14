@@ -12,38 +12,38 @@ mutable struct JacVecOperator{T, F, T1, T2, uType, P, tType, O} <:
     opnorm::O
 
     function JacVecOperator{T}(f,
-                               p = nothing,
-                               t::Union{Nothing, Number} = nothing;
-                               autodiff = true,
-                               ishermitian = false,
-                               opnorm = true) where {T}
+            p = nothing,
+            t::Union{Nothing, Number} = nothing;
+            autodiff = true,
+            ishermitian = false,
+            opnorm = true) where {T}
         p === nothing ? P = Any : P = typeof(p)
         t === nothing ? tType = Any : tType = typeof(t)
         new{T, typeof(f), Nothing, Nothing, Any, P, tType, typeof(opnorm)}(f,
-                                                                           nothing,
-                                                                           nothing,
-                                                                           nothing,
-                                                                           nothing,
-                                                                           nothing,
-                                                                           autodiff,
-                                                                           ishermitian)
+            nothing,
+            nothing,
+            nothing,
+            nothing,
+            nothing,
+            autodiff,
+            ishermitian)
     end
     function JacVecOperator{T}(f,
-                               u::AbstractArray,
-                               p = nothing,
-                               t::Union{Nothing, Number} = nothing;
-                               autodiff = true,
-                               ishermitian = false,
-                               opnorm = true) where {T}
+            u::AbstractArray,
+            p = nothing,
+            t::Union{Nothing, Number} = nothing;
+            autodiff = true,
+            ishermitian = false,
+            opnorm = true) where {T}
         if autodiff
             cache1 = ForwardDiff.Dual{
-                                      typeof(ForwardDiff.Tag(SparseDiffTools.DeivVecTag(),
-                                                             eltype(u))), eltype(u), 1
-                                      }.(u, ForwardDiff.Partials.(tuple.(u)))
+                typeof(ForwardDiff.Tag(SparseDiffTools.DeivVecTag(),
+                    eltype(u))), eltype(u), 1
+            }.(u, ForwardDiff.Partials.(tuple.(u)))
             cache2 = ForwardDiff.Dual{
-                                      typeof(ForwardDiff.Tag(SparseDiffTools.DeivVecTag(),
-                                                             eltype(u))), eltype(u), 1
-                                      }.(u, ForwardDiff.Partials.(tuple.(u)))
+                typeof(ForwardDiff.Tag(SparseDiffTools.DeivVecTag(),
+                    eltype(u))), eltype(u), 1
+            }.(u, ForwardDiff.Partials.(tuple.(u)))
         else
             cache1 = similar(u)
             cache2 = similar(u)
@@ -59,15 +59,15 @@ mutable struct JacVecOperator{T, F, T1, T2, uType, P, tType, O} <:
             P,
             tType,
             typeof(opnorm)
-            }(f,
-              cache1,
-              cache2,
-              u,
-              p,
-              t,
-              autodiff,
-              ishermitian,
-              opnorm)
+        }(f,
+            cache1,
+            cache2,
+            u,
+            p,
+            t,
+            autodiff,
+            ishermitian,
+            opnorm)
     end
     function JacVecOperator(f, u, args...; kwargs...)
         JacVecOperator{eltype(u)}(f, u, args...; kwargs...)
@@ -107,8 +107,8 @@ function Base.:*(L::JacVecOperator, x::AbstractVector)
 end
 
 function LinearAlgebra.mul!(du::AbstractVector,
-                            L::JacVecOperator,
-                            x::AbstractVector)
+        L::JacVecOperator,
+        x::AbstractVector)
     du = reshape(du, size(L.u))
     let p = L.p, t = L.t
         if L.cache1 === nothing
@@ -116,27 +116,27 @@ function LinearAlgebra.mul!(du::AbstractVector,
                 auto_jacvec!(du, (_du, _u) -> L.f(_du, _u, p, t), L.u, x)
             else
                 num_jacvec!(du,
-                            (_du, _u) -> L.f(_du, _u, p, t),
-                            L.u,
-                            x;
-                            compute_f0 = true)
+                    (_du, _u) -> L.f(_du, _u, p, t),
+                    L.u,
+                    x;
+                    compute_f0 = true)
             end
         else
             if L.autodiff
                 auto_jacvec!(du,
-                             (_du, _u) -> L.f(_du, _u, p, t),
-                             L.u,
-                             x,
-                             L.cache1,
-                             L.cache2)
+                    (_du, _u) -> L.f(_du, _u, p, t),
+                    L.u,
+                    x,
+                    L.cache1,
+                    L.cache2)
             else
                 num_jacvec!(du,
-                            (_du, _u) -> L.f(_du, _u, p, t),
-                            L.u,
-                            x,
-                            L.cache1,
-                            L.cache2;
-                            compute_f0 = true)
+                    (_du, _u) -> L.f(_du, _u, p, t),
+                    L.u,
+                    x,
+                    L.cache1,
+                    L.cache2;
+                    compute_f0 = true)
             end
         end
     end
@@ -159,20 +159,20 @@ mutable struct AnalyticalJacVecOperator{T, F, uType, P, tType, O} <:
     ishermitian::Bool
     opnorm::O
     function AnalyticalJacVecOperator{T}(f,
-                                         u = nothing,
-                                         p = nothing,
-                                         t::Union{Nothing, Number} = nothing;
-                                         ishermitian = false,
-                                         opnorm = true) where {T}
+            u = nothing,
+            p = nothing,
+            t::Union{Nothing, Number} = nothing;
+            ishermitian = false,
+            opnorm = true) where {T}
         u === nothing ? uType = Any : uType = typeof(u)
         p === nothing ? P = Any : P = typeof(p)
         t === nothing ? tType = Any : tType = typeof(t)
         new{T, typeof(f), uType, P, tType, typeof(opnorm)}(f,
-                                                           u,
-                                                           p,
-                                                           t,
-                                                           ishermitian,
-                                                           opnorm)
+            u,
+            p,
+            t,
+            ishermitian,
+            opnorm)
     end
     function AnalyticalJacVecOperator(f, u, args...; kwargs...)
         AnalyticalJacVecOperator{eltype(u)}(f, u, args...; kwargs...)
@@ -206,7 +206,7 @@ end
 Base.:*(L::AnalyticalJacVecOperator, x::AbstractVector) = L.f(x, L.u, L.p, L.t)
 
 function LinearAlgebra.mul!(du::AbstractVector,
-                            L::AnalyticalJacVecOperator,
-                            x::AbstractVector)
+        L::AnalyticalJacVecOperator,
+        x::AbstractVector)
     L.f(du, x, L.u, L.p, L.t)
 end

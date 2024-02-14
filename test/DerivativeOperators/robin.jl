@@ -54,10 +54,10 @@ for j in 1:2
     for i in 1:5
         if j == 1
             Q = RobinBC((al[i], bl[i], cl[i]), (ar[i], br[i], cr[i]),
-                        dx[i] .* ones(5 * i))
+                dx[i] .* ones(5 * i))
         else
             Q = RobinBC([al[i], bl[i], cl[i]], [ar[i], br[i], cr[i]],
-                        dx[i] .* ones(5 * i))
+                dx[i] .* ones(5 * i))
         end
         Q_L, Q_b = Array(Q, 5i)
 

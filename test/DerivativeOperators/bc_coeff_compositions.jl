@@ -7,7 +7,7 @@ function fourth_deriv_approx_stencil(N)
     A[2, 1:8] = [2 / 3 -11 / 6 0.0 31 / 6 -22 / 3 4.5 -4 / 3 1 / 6]
 
     A[N - 1, (N - 5):end] = reverse([2 / 3 -11 / 6 0.0 31 / 6 -22 / 3 4.5 -4 / 3 1 / 6],
-                                    dims = 2)
+        dims = 2)
     A[N, (N - 5):end] = reverse([3.5 -56 / 3 42.5 -54.0 251 / 6 -20.0 5.5 -2 / 3], dims = 2)
 
     for i in 3:(N - 2)
@@ -157,16 +157,16 @@ end
         @test Array(A)[1] ≈ (Array(L) * Array(Q, N)[1], Array(L) * Array(Q, N)[2])[1]
         @test Array(A)[2] ≈ (Array(L) * Array(Q, N)[1], Array(L) * Array(Q, N)[2])[2]
         @test SparseMatrixCSC(A)[1] ≈ (SparseMatrixCSC(L) * SparseMatrixCSC(Q, N)[1],
-               SparseMatrixCSC(L) * SparseMatrixCSC(Q, N)[2])[1]
+            SparseMatrixCSC(L) * SparseMatrixCSC(Q, N)[2])[1]
         @test SparseMatrixCSC(A)[2] ≈ (SparseMatrixCSC(L) * SparseMatrixCSC(Q, N)[1],
-               SparseMatrixCSC(L) * SparseMatrixCSC(Q, N)[2])[2]
+            SparseMatrixCSC(L) * SparseMatrixCSC(Q, N)[2])[2]
         @test sparse(A)[1] ≈ (sparse(L) * sparse(Q, N)[1], sparse(L) * sparse(Q, N)[2])[1]
         @test sparse(A)[2] ≈ (sparse(L) * sparse(Q, N)[1], sparse(L) * sparse(Q, N)[2])[2]
         # BandedMatrix not implemented for boundary operator
         @test_broken BandedMatrix(A)[1] ≈ (BandedMatrix(L) * BandedMatrix(Q, N)[1],
-                      BandedMatrix(L) * BandedMatrix(Q, N)[2])[1]
+            BandedMatrix(L) * BandedMatrix(Q, N)[2])[1]
         @test_broken BandedMatrix(A)[2] ≈ (BandedMatrix(L) * BandedMatrix(Q, N)[1],
-                      BandedMatrix(L) * BandedMatrix(Q, N)[2])[2]
+            BandedMatrix(L) * BandedMatrix(Q, N)[2])[2]
 
         # Test that concretization works with multiplication
         u = rand(N)
@@ -301,36 +301,36 @@ end
         @test Array(A)[2] ≈
               (Array(L) * Array(Q, N + 1)[1], Array(L) * Array(Q, N + 1)[2])[2]
         @test SparseMatrixCSC(A)[1] ≈ (SparseMatrixCSC(L) * SparseMatrixCSC(Q, N + 1)[1],
-               SparseMatrixCSC(L) * SparseMatrixCSC(Q, N + 1)[2])[1]
+            SparseMatrixCSC(L) * SparseMatrixCSC(Q, N + 1)[2])[1]
         @test SparseMatrixCSC(A)[2] ≈ (SparseMatrixCSC(L) * SparseMatrixCSC(Q, N + 1)[1],
-               SparseMatrixCSC(L) * SparseMatrixCSC(Q, N + 1)[2])[2]
+            SparseMatrixCSC(L) * SparseMatrixCSC(Q, N + 1)[2])[2]
         @test sparse(A)[1] ≈
               (sparse(L) * sparse(Q, N + 1)[1], sparse(L) * sparse(Q, N + 1)[2])[1]
         @test sparse(A)[2] ≈
               (sparse(L) * sparse(Q, N + 1)[1], sparse(L) * sparse(Q, N + 1)[2])[2]
         # BandedMatrix not implemeted for boundary operator
         @test_broken BandedMatrix(A)[1] ≈ (BandedMatrix(L) * BandedMatrix(Q, N + 1)[1],
-                      BandedMatrix(L) * BandedMatrix(Q, N + 1)[2])[1]
+            BandedMatrix(L) * BandedMatrix(Q, N + 1)[2])[1]
         @test_broken BandedMatrix(A)[2] ≈ (BandedMatrix(L) * BandedMatrix(Q, N + 1)[1],
-                      BandedMatrix(L) * BandedMatrix(Q, N + 1)[2])[2]
+            BandedMatrix(L) * BandedMatrix(Q, N + 1)[2])[2]
 
         # Test concretization for CenteredDifference
         A2 = L2 * Q
         @test Array(A2)[1] ≈ (Array(L2) * Array(Q, N)[1], Array(L2) * Array(Q, N)[2])[1]
         @test Array(A2)[2] ≈ (Array(L2) * Array(Q, N)[1], Array(L2) * Array(Q, N)[2])[2]
         @test SparseMatrixCSC(A2)[1] ≈ (SparseMatrixCSC(L2) * SparseMatrixCSC(Q, N)[1],
-               SparseMatrixCSC(L2) * SparseMatrixCSC(Q, N)[2])[1]
+            SparseMatrixCSC(L2) * SparseMatrixCSC(Q, N)[2])[1]
         @test SparseMatrixCSC(A2)[2] ≈ (SparseMatrixCSC(L2) * SparseMatrixCSC(Q, N)[1],
-               SparseMatrixCSC(L2) * SparseMatrixCSC(Q, N)[2])[2]
+            SparseMatrixCSC(L2) * SparseMatrixCSC(Q, N)[2])[2]
         @test sparse(A2)[1] ≈
               (sparse(L2) * sparse(Q, N)[1], sparse(L2) * sparse(Q, N)[2])[1]
         @test sparse(A2)[2] ≈
               (sparse(L2) * sparse(Q, N)[1], sparse(L2) * sparse(Q, N)[2])[2]
         # BandedMatrix not implemeted for boundary operator
         @test_broken BandedMatrix(A2)[1] ≈ (BandedMatrix(L2) * BandedMatrix(Q, N)[1],
-                      BandedMatrix(L2) * BandedMatrix(Q, N)[2])[1]
+            BandedMatrix(L2) * BandedMatrix(Q, N)[2])[1]
         @test_broken BandedMatrix(A2)[2] ≈ (BandedMatrix(L2) * BandedMatrix(Q, N)[1],
-                      BandedMatrix(L2) * BandedMatrix(Q, N)[2])[2]
+            BandedMatrix(L2) * BandedMatrix(Q, N)[2])[2]
 
         # Test that concretization works with multiplication, UpwindDifference
         u = rand(N + 1)

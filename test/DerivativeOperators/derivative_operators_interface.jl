@@ -11,7 +11,7 @@ function fourth_deriv_approx_stencil(N)
     A[2, 1:8] = [2 / 3 -11 / 6 0.0 31 / 6 -22 / 3 4.5 -4 / 3 1 / 6]
 
     A[N - 1, (N - 5):end] = reverse([2 / 3 -11 / 6 0.0 31 / 6 -22 / 3 4.5 -4 / 3 1 / 6],
-                                    dims = 2)
+        dims = 2)
     A[N, (N - 5):end] = reverse([3.5 -56 / 3 42.5 -54.0 251 / 6 -20.0 5.5 -2 / 3], dims = 2)
 
     for i in 3:(N - 2)
@@ -100,7 +100,7 @@ function analyticCtrFourTwoIrr()
 end
 
 function convert_by_multiplication(::Type{Array}, A::AbstractDerivativeOperator{T},
-                                   N::Int = A.dimension) where {T}
+        N::Int = A.dimension) where {T}
     @assert N >= A.stencil_length # stencil must be able to fit in the matrix
     mat = zeros(T, (N, N + 2))
     v = zeros(T, N + 2)
@@ -148,8 +148,8 @@ end
 
     push!(weights, ([-0.5, 0, 0.5], [1.0, -2.0, 1.0], [-1 / 2, 1.0, 0.0, -1.0, 1 / 2]))
     push!(weights,
-          ([1 / 12, -2 / 3, 0, 2 / 3, -1 / 12], [-1 / 12, 4 / 3, -5 / 2, 4 / 3, -1 / 12],
-           [1 / 8, -1.0, 13 / 8, 0.0, -13 / 8, 1.0, -1 / 8]))
+        ([1 / 12, -2 / 3, 0, 2 / 3, -1 / 12], [-1 / 12, 4 / 3, -5 / 2, 4 / 3, -1 / 12],
+            [1 / 8, -1.0, 13 / 8, 0.0, -13 / 8, 1.0, -1 / 8]))
 
     for d in 1:3
         for (i, a) in enumerate([2, 4])
@@ -165,8 +165,8 @@ end
 
     push!(weights, ([-0.5, 0, 0.5], [1.0, -2.0, 1.0], [-1 / 2, 1.0, 0.0, -1.0, 1 / 2]))
     push!(weights,
-          ([1 / 12, -2 / 3, 0, 2 / 3, -1 / 12], [-1 / 12, 4 / 3, -5 / 2, 4 / 3, -1 / 12],
-           [1 / 8, -1.0, 13 / 8, 0.0, -13 / 8, 1.0, -1 / 8]))
+        ([1 / 12, -2 / 3, 0, 2 / 3, -1 / 12], [-1 / 12, 4 / 3, -5 / 2, 4 / 3, -1 / 12],
+            [1 / 8, -1.0, 13 / 8, 0.0, -13 / 8, 1.0, -1 / 8]))
 
     for d in 1:3
         for (i, a) in enumerate([2, 4])
@@ -180,7 +180,7 @@ end
 
 @testset "Correctness of Uniform Stencils, Complete Half" begin
     weights = (([0.5, 0.5], [-1 / 16, 9 / 16, 9 / 16, -1 / 16]),
-               ([-1.0, 1.0], [1 / 24, -9 / 8, 9 / 8, -1 / 24]))
+        ([-1.0, 1.0], [1 / 24, -9 / 8, 9 / 8, -1 / 24]))
     for (i, a) in enumerate([2, 4])
         for d in 0:1
             D = CompleteHalfCenteredDifference(d, a, 1.0)
@@ -191,7 +191,7 @@ end
 
 @testset "Correctness of Non-Uniform Stencils, Complete Half" begin
     weights = (([0.5, 0.5], [-1 / 16, 9 / 16, 9 / 16, -1 / 16]),
-               ([-1.0, 1.0], [1 / 24, -9 / 8, 9 / 8, -1 / 24]))
+        ([-1.0, 1.0], [1 / 24, -9 / 8, 9 / 8, -1 / 24]))
     for (i, a) in enumerate([2, 4])
         for d in 0:1
             D = CompleteHalfCenteredDifference(d, a, 0.0:1.0:5.0)
@@ -202,9 +202,9 @@ end
 
 @testset "Correctness of Uniform Upwind Stencils" begin
     weights = (([-1.0, 1.0],
-                [-1.0, 3.0, -3.0, 1.0]),
-               ([-3 / 2, 2.0, -1 / 2],
-                [-5 / 2, 9.0, -12.0, 7.0, -3 / 2]))
+            [-1.0, 3.0, -3.0, 1.0]),
+        ([-3 / 2, 2.0, -1 / 2],
+            [-5 / 2, 9.0, -12.0, 7.0, -3 / 2]))
     for (i, a) in enumerate(1:2)
         for (j, d) in enumerate([1, 3])
             D = CompleteUpwindDifference(d, a, 1.0, 0)
@@ -215,9 +215,9 @@ end
 
 @testset "Correctness of Non-Uniform Upwind Stencils" begin
     weights = (([-1.0, 1.0],
-                [-1.0, 3.0, -3.0, 1.0]),
-               ([-3 / 2, 2.0, -1 / 2],
-                [-5 / 2, 9.0, -12.0, 7.0, -3 / 2]))
+            [-1.0, 3.0, -3.0, 1.0]),
+        ([-3 / 2, 2.0, -1 / 2],
+            [-5 / 2, 9.0, -12.0, 7.0, -3 / 2]))
     for (i, a) in enumerate(1:2)
         for (j, d) in enumerate([1, 3])
             D = CompleteUpwindDifference(d, a, 0.0:1.0:10.0, 0)
@@ -369,11 +369,11 @@ end
     push!(xarrs, range(0, stop = 1, length = N))
     push!(yarrs, range(0, stop = 1, length = M))
     push!(xarrs,
-          vcat(xarrs[1][1:floor(Int, N / 2)] .^ 0.2020,
-               xarrs[1][ceil(Int, N / 2):end] .^ 2.015))
+        vcat(xarrs[1][1:floor(Int, N / 2)] .^ 0.2020,
+            xarrs[1][ceil(Int, N / 2):end] .^ 2.015))
     push!(yarrs,
-          vcat(yarrs[1][1:floor(Int, M / 2)] .^ 1.793,
-               yarrs[1][ceil(Int, M / 2):end] .^ 2.019))
+        vcat(yarrs[1][1:floor(Int, M / 2)] .^ 1.793,
+            yarrs[1][ceil(Int, M / 2):end] .^ 2.019))
 
     for (i, xarr, yarr) in zip(1:2, xarrs, yarrs)
         if i == 1

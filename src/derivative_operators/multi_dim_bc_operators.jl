@@ -2,8 +2,8 @@
 abstract type MultiDimensionalBC{T, N} <: AbstractBC{T} end
 
 @noinline function _slice_rmul!(u_temp::AbstractArray{T, N},
-                                A::AbstractDiffEqLinearOperator, u::AbstractArray{T, N},
-                                dim::Int, pre, post) where {T, N}
+        A::AbstractDiffEqLinearOperator, u::AbstractArray{T, N},
+        dim::Int, pre, post) where {T, N}
     for J in post
         for I in pre
             u_temp[I, :, J] = A * u[I, :, J]
@@ -16,19 +16,19 @@ end
 slice_rmul lets you multiply each vector like strip of an array `u` with a linear operator `A`, sliced along dimension `dim`
 """
 function slice_rmul(A::AbstractDiffEqLinearOperator, u::AbstractArray{T, N},
-                    dim::Int) where {T, N}
+        dim::Int) where {T, N}
     @assert N != 1
     u_temp = zero(u)
 
     _slice_rmul!(u_temp, A, u, dim, CartesianIndices(axes(u)[1:(dim - 1)]),
-                 CartesianIndices(axes(u)[(dim + 1):end]))
+        CartesianIndices(axes(u)[(dim + 1):end]))
 
     return u_temp
 end
 
 @noinline function _slice_rmul!(lower::AbstractArray, upper::AbstractArray,
-                                A::AbstractArray{B, M}, u::AbstractArray{T, N}, dim::Int,
-                                pre, post) where {T, B, N, M}
+        A::AbstractArray{B, M}, u::AbstractArray{T, N}, dim::Int,
+        pre, post) where {T, B, N, M}
     for J in post
         for I in pre
             tmp = A[I, J] * u[I, :, J]
@@ -39,14 +39,14 @@ end
 end
 
 function slice_rmul(A::AbstractArray{B, M}, u::AbstractArray{T, N},
-                    dim::Int) where {T, B, N, M}
+        dim::Int) where {T, B, N, M}
     @assert N != 1
     @assert M == N - 1
     lower = zeros(T, perpsize(u, dim))
     upper = zeros(T, perpsize(u, dim))
 
     _slice_rmul!(lower, upper, A, u, dim, CartesianIndices(axes(u)[1:(dim - 1)]),
-                 CartesianIndices(axes(u)[(dim + 1):end]))
+        CartesianIndices(axes(u)[(dim + 1):end]))
 
     return (lower, upper)
 end
@@ -96,16 +96,16 @@ end
 #s should be size of the domain
 function MultiDimBC{dim}(BC::B, s) where {B <: AtomicBC, dim}
     MultiDimDirectionalBC{gettype(BC), B, dim, length(s), length(s) - 1}(fill(BC,
-                                                                              s[setdiff(1:length(s),
-                                                                                        dim)]))
+        s[setdiff(1:length(s),
+            dim)]))
 end
 
 #Extra constructor to make a set of BC operators that extend an atomic BC Operator to the whole domain
 #Only valid in the uniform grid case!
 function MultiDimBC(BC::B, s) where {B <: AtomicBC}
     Tuple([MultiDimDirectionalBC{gettype(BC), B, dim, length(s), length(s) - 1}(fill(BC,
-                                                                                     s[setdiff(1:length(s),
-                                                                                               dim)]))
+               s[setdiff(1:length(s),
+                   dim)]))
            for dim in 1:length(s)])
 end
 
@@ -139,26 +139,28 @@ function RobinBC{dim}(l::NTuple{3, T}, r::NTuple{3, T}, dx, order, s) where {T, 
     MultiDimBC{dim}(RobinBC(l, r, dx, order), s)
 end
 function RobinBC(l::NTuple{3, T}, r::NTuple{3, T}, dxyz, order, s) where {T}
-    Tuple([MultiDimDirectionalBC{T, RobinBC{T}, dim, length(s), length(s) - 1}(fill(RobinBC(l,
-                                                                                            r,
-                                                                                            dxyz[dim],
-                                                                                            order),
-                                                                                    perpindex(s,
-                                                                                              dim)))
+    Tuple([MultiDimDirectionalBC{T, RobinBC{T}, dim, length(s), length(s) - 1}(fill(
+               RobinBC(l,
+                   r,
+                   dxyz[dim],
+                   order),
+               perpindex(s,
+                   dim)))
            for dim in 1:length(s)])
 end
 
 function GeneralBC{dim}(αl::AbstractVector{T}, αr::AbstractVector{T}, dx, order,
-                        s) where {T, dim}
+        s) where {T, dim}
     MultiDimBC{dim}(GeneralBC(αl, αr, dx, order), s)
 end
 function GeneralBC(αl::AbstractVector{T}, αr::AbstractVector{T}, dxyz, order, s) where {T}
-    Tuple([MultiDimDirectionalBC{T, GeneralBC{T}, dim, length(s), length(s) - 1}(fill(GeneralBC(αl,
-                                                                                                αr,
-                                                                                                dxyz[dim],
-                                                                                                order),
-                                                                                      perpindex(s,
-                                                                                                dim)))
+    Tuple([MultiDimDirectionalBC{T, GeneralBC{T}, dim, length(s), length(s) - 1}(fill(
+               GeneralBC(αl,
+                   αr,
+                   dxyz[dim],
+                   order),
+               perpindex(s,
+                   dim)))
            for dim in 1:length(s)])
 end
 
@@ -210,25 +212,27 @@ Base.ndims(Q::MultiDimensionalBC{T, N}) where {T, N} = N
 Base.:*(BC::AtomicBC, u::AbstractArray) = MultiDimBC{1}(BC, size(u)) * u
 
 function Base.:*(Q::MultiDimDirectionalBC{T, B, D, N, K},
-                 u::AbstractArray{T, N}) where {T, B, D, N, K}
+        u::AbstractArray{T, N}) where {T, B, D, N, K}
     @assert perpsize(u, D)==size(Q.BCs) "Size of the BCs array in the MultiDimBC is incorrect, needs to be $(perpsize(u,D)) to extend dimension $D, got $(size(Q.BCs))"
     lower, upper = slice_rmul(Q.BCs, u, D)
-    return BoundaryPaddedArray{T, D, N, K, typeof(u), Union{typeof(lower), typeof(upper)}}(lower,
-                                                                                           upper,
-                                                                                           u)
+    return BoundaryPaddedArray{T, D, N, K, typeof(u), Union{typeof(lower), typeof(upper)}}(
+        lower,
+        upper,
+        u)
 end
 
 function Base.:*(Q::MultiDimDirectionalBC{T, PeriodicBC{T}, D, N, K},
-                 u::AbstractArray{T, N}) where {T, B, D, N, K}
+        u::AbstractArray{T, N}) where {T, B, D, N, K}
     lower = selectdim(u, D, 1)
     upper = selectdim(u, D, size(u, D))
-    return BoundaryPaddedArray{T, D, N, K, typeof(u), Union{typeof(lower), typeof(upper)}}(lower,
-                                                                                           upper,
-                                                                                           u)
+    return BoundaryPaddedArray{T, D, N, K, typeof(u), Union{typeof(lower), typeof(upper)}}(
+        lower,
+        upper,
+        u)
 end
 
 function Base.:*(Q::ComposedMultiDimBC{T, B, N, K},
-                 u::AbstractArray{T, N}) where {T, B, N, K}
+        u::AbstractArray{T, N}) where {T, B, N, K}
     for dim in 1:N
         @assert perpsize(u, dim)==size(Q.BCs[dim]) "Size of the BCs array for dimension $dim in the MultiDimBC is incorrect, needs to be $(perpsize(u,dim)), got $(size(Q.BCs[dim]))"
     end
@@ -236,17 +240,17 @@ function Base.:*(Q::ComposedMultiDimBC{T, B, N, K},
     lower = [A[1] for A in out]
     upper = [A[2] for A in out]
     return ComposedBoundaryPaddedArray{T, N, K, typeof(u),
-                                       Union{typeof.(lower)..., typeof.(upper)...}}(lower,
-                                                                                    upper,
-                                                                                    u)
+        Union{typeof.(lower)..., typeof.(upper)...}}(lower,
+        upper,
+        u)
 end
 
 function Base.:*(Q::ComposedMultiDimBC{T, PeriodicBC{T}, N, K},
-                 u::AbstractArray{T, N}) where {T, B, N, K}
+        u::AbstractArray{T, N}) where {T, B, N, K}
     lower = [selectdim(u, d, 1) for d in 1:N]
     upper = [selectdim(u, d, size(u, d)) for d in 1:N]
     return ComposedBoundaryPaddedArray{T, N, K, typeof(u),
-                                       Union{typeof.(lower)..., typeof.(upper)...}}(lower,
-                                                                                    upper,
-                                                                                    u)
+        Union{typeof.(lower)..., typeof.(upper)...}}(lower,
+        upper,
+        u)
 end

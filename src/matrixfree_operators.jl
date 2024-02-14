@@ -5,8 +5,8 @@ mutable struct MatrixFreeOperator{F, N, S, O} <: AbstractMatrixFreeOperator{F}
     opnorm::O
     ishermitian::Bool
     function MatrixFreeOperator(f::F, args::N;
-                                size = nothing, opnorm = true,
-                                ishermitian = false) where {F, N}
+            size = nothing, opnorm = true,
+            ishermitian = false) where {F, N}
         @assert (N <: Tuple&&length(args) in (1, 2)) "Arguments of a "*
         "MatrixFreeOperator must be a tuple with one or two elements"
         return new{F, N, typeof(size), typeof(opnorm)}(f, args, size, opnorm, ishermitian)
@@ -76,7 +76,7 @@ function (M::MatrixFreeOperator{F, N})(u, p, t) where {F, N}
 end
 
 @inline function mul!(y::AbstractVector, A::MatrixFreeOperator{F, N},
-                      x::AbstractVector) where {F, N}
+        x::AbstractVector) where {F, N}
     if isconstant(A)
         A.f(y, x, A.args[1])
     else
@@ -86,7 +86,7 @@ end
 end
 
 @inline function mul!(Y::AbstractMatrix, A::MatrixFreeOperator{F, N},
-                      X::AbstractMatrix) where {F, N}
+        X::AbstractMatrix) where {F, N}
     m, n = size(Y)
     k, _n = size(X)
     if n != _n

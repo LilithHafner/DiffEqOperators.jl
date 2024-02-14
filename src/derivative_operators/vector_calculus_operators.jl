@@ -7,10 +7,10 @@ struct GradientOperator{T, N, O}
 end
 
 function Gradient(approximation_order::Int,
-                  dx::Union{NTuple{N, AbstractVector{T}}, NTuple{N, T}},
-                  len::NTuple{N, Int}; coeff_func = 1) where {T <: Real, N}
+        dx::Union{NTuple{N, AbstractVector{T}}, NTuple{N, T}},
+        len::NTuple{N, Int}; coeff_func = 1) where {T <: Real, N}
     ops = permutedims([CenteredDifference{n}(1, approximation_order, dx[n], len[n],
-                                             coeff_func) for n in 1:N])
+                           coeff_func) for n in 1:N])
 
     GradientOperator{T, N, typeof(ops)}(ops)
 end
@@ -22,11 +22,11 @@ struct CurlOperator{T, O}
 end
 
 function Curl(approximation_order::Int,
-              dx::Union{NTuple{3, AbstractVector{T}}, NTuple{3, T}},
-              len::NTuple{3, Int}; coeff_func = 1) where {T <: Real}
+        dx::Union{NTuple{3, AbstractVector{T}}, NTuple{3, T}},
+        len::NTuple{3, Int}; coeff_func = 1) where {T <: Real}
     @assert len[1] == len[2]&&len[2] == len[3] "All dimensions must have equal no. of grid points"
     ops = permutedims([CenteredDifference{n}(1, approximation_order, dx[n], len[n],
-                                             coeff_func) for n in 1:3])
+                           coeff_func) for n in 1:3])
 
     CurlOperator{T, typeof(ops)}(ops)
 end
@@ -38,10 +38,10 @@ struct DivergenceOperator{T, N, O}
 end
 
 function Divergence(approximation_order::Int,
-                    dx::Union{NTuple{N, AbstractVector{T}}, NTuple{N, T}},
-                    len::NTuple{N, Int}; coeff_func = 1) where {T <: Real, N}
+        dx::Union{NTuple{N, AbstractVector{T}}, NTuple{N, T}},
+        len::NTuple{N, Int}; coeff_func = 1) where {T <: Real, N}
     ops = permutedims([CenteredDifference{n}(1, approximation_order, dx[n], len[n],
-                                             coeff_func) for n in 1:N])
+                           coeff_func) for n in 1:N])
 
     DivergenceOperator{T, N, typeof(ops)}(ops)
 end

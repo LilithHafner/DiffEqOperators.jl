@@ -58,7 +58,7 @@ using DiffEqOperators, OrdinaryDiffEq, LinearAlgebra
     end
 
     A3 = UpwindDifference{Float64}(1, 3, Δx * ones(length(x) + 1), length(x), -1,
-                                   offside = 1)
+        offside = 1)
     KdV = function (du, u, p, t)
         bc = GeneralBC([0, 1, -6 * ϕ(-10, t), 0, -1], [0, 1, -6 * ϕ(10, t), 0, -1], Δx, 3)
         mul!(du, A3, bc * u)

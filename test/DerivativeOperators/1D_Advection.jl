@@ -13,7 +13,7 @@ using OrdinaryDiffEq, DiffEqOperators
     oriu = zeros(x)
 
     A = DiffEqUpwindOperator{Float64}(1, 2, Δx, length(x), .~BitVector(length(x)),
-                                      :Dirichlet0, :nothing)
+        :Dirichlet0, :nothing)
 
     function advection(t, u, du)
         A(t, u, du)

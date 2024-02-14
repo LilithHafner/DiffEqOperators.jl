@@ -38,7 +38,7 @@ Higher-dimensional generalization of BoundaryPaddedVector pads an array of dimen
 
 """
 struct BoundaryPaddedArray{T, D, N, M, V <: AbstractArray{T, N}, B <: AbstractArray{T, M}
-                           } <: AbstractDirectionalBoundaryPaddedArray{T, N, D}
+} <: AbstractDirectionalBoundaryPaddedArray{T, N, D}
     lower::B #an array of dimension M = N-1, used to extend the lower index boundary
     upper::B #Ditto for the upper index boundary
     u::V
@@ -75,21 +75,22 @@ function compose(padded_arrays::BoundaryPaddedArray...)
         length(setdiff(Ds, D)) < N ||
             throw(ArgumentError("There are multiple Arrays that extend along dimension $D - make sure every dimension has a unique extension"))
     end
-    any(fill(padded_arrays[1].u, (length(padded_arrays),)) .== getfield.(padded_arrays, :u)) ||
+    any(fill(padded_arrays[1].u, (length(padded_arrays),)) .==
+        getfield.(padded_arrays, :u)) ||
         throw(ArgumentError("The padded_arrays do not all extend the same u!"))
     padded_arrays = padded_arrays[sortperm([Ds...])]
     lower = [padded_array.lower for padded_array in padded_arrays]
     upper = [padded_array.upper for padded_array in padded_arrays]
 
     ComposedBoundaryPaddedArray{gettype(padded_arrays[1]), N, N - 1,
-                                typeof(padded_arrays[1].u), typeof(lower[1])}(lower, upper,
-                                                                              padded_arrays[1].u)
+        typeof(padded_arrays[1].u), typeof(lower[1])}(lower, upper,
+        padded_arrays[1].u)
 end
 
 # Composed BoundaryPaddedArray
 
 struct ComposedBoundaryPaddedArray{T, N, M, V <: AbstractArray{T, N},
-                                   B <: AbstractArray{T, M}} <:
+    B <: AbstractArray{T, M}} <:
        AbstractComposedBoundaryPaddedArray{T, N}
     lower::Vector{B}
     upper::Vector{B}
@@ -117,9 +118,10 @@ Ax, Ay,... = decompose(A::ComposedBoundaryPaddedArray)
 Decomposes a ComposedBoundaryPaddedArray in to components that extend along each dimension individually.
 """
 function decompose(A::ComposedBoundaryPaddedArray)
-    Tuple([BoundaryPaddedArray{gettype(A), i, ndims(A), ndims(A) - 1, typeof(lower[1])}(A.lower[i],
-                                                                                        A.upper[i],
-                                                                                        A.u)
+    Tuple([BoundaryPaddedArray{gettype(A), i, ndims(A), ndims(A) - 1, typeof(lower[1])}(
+               A.lower[i],
+               A.upper[i],
+               A.u)
            for i in 1:ndims(A)])
 end
 
@@ -131,7 +133,7 @@ gettype(Q::AbstractBoundaryPaddedArray{T, N}) where {T, N} = T
 Base.ndims(Q::AbstractBoundaryPaddedArray{T, N}) where {T, N} = N
 
 function Base.getindex(Q::BoundaryPaddedArray{T, D, N, M, V, B},
-                       _inds::Vararg{Int, N}) where {T, D, N, M, V, B} #supports range and colon indexing!
+        _inds::Vararg{Int, N}) where {T, D, N, M, V, B} #supports range and colon indexing!
     inds = [_inds...]
     S = size(Q)
     dim = D
@@ -156,7 +158,7 @@ function Base.getindex(Q::BoundaryPaddedArray{T, D, N, M, V, B},
 end
 
 function Base.getindex(Q::ComposedBoundaryPaddedArray{T, N, M, V, B},
-                       inds::Vararg{Int, N}) where {T, N, M, V, B} #as yet no support for range indexing or colon indexing
+        inds::Vararg{Int, N}) where {T, N, M, V, B} #as yet no support for range indexing or colon indexing
     S = size(Q)
     @assert reduce((&), inds .<= S)
     for (dim, index) in enumerate(inds)

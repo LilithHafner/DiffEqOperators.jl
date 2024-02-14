@@ -11,29 +11,29 @@ mutable struct VecJacOperator{T, F, T1, T2, uType, P, tType, O} <:
     opnorm::O
 
     function VecJacOperator{T}(f,
-                               p = nothing,
-                               t::Union{Nothing, Number} = nothing;
-                               autodiff = true,
-                               ishermitian = false,
-                               opnorm = true) where {T}
+            p = nothing,
+            t::Union{Nothing, Number} = nothing;
+            autodiff = true,
+            ishermitian = false,
+            opnorm = true) where {T}
         p === nothing ? P = Any : P = typeof(p)
         t === nothing ? tType = Any : tType = typeof(t)
         new{T, typeof(f), Nothing, Nothing, Any, P, tType, typeof(opnorm)}(f,
-                                                                           nothing,
-                                                                           nothing,
-                                                                           nothing,
-                                                                           nothing,
-                                                                           nothing,
-                                                                           autodiff,
-                                                                           ishermitian)
+            nothing,
+            nothing,
+            nothing,
+            nothing,
+            nothing,
+            autodiff,
+            ishermitian)
     end
     function VecJacOperator{T}(f,
-                               u::AbstractArray,
-                               p = nothing,
-                               t::Union{Nothing, Number} = nothing;
-                               autodiff = true,
-                               ishermitian = false,
-                               opnorm = true) where {T}
+            u::AbstractArray,
+            p = nothing,
+            t::Union{Nothing, Number} = nothing;
+            autodiff = true,
+            ishermitian = false,
+            opnorm = true) where {T}
         cache1 = similar(u)
         cache2 = similar(u)
         p === nothing ? P = Any : P = typeof(p)
@@ -47,15 +47,15 @@ mutable struct VecJacOperator{T, F, T1, T2, uType, P, tType, O} <:
             P,
             tType,
             typeof(opnorm)
-            }(f,
-              cache1,
-              cache2,
-              u,
-              p,
-              t,
-              autodiff,
-              ishermitian,
-              opnorm)
+        }(f,
+            cache1,
+            cache2,
+            u,
+            p,
+            t,
+            autodiff,
+            ishermitian,
+            opnorm)
     end
     function VecJacOperator(f, u, args...; kwargs...)
         VecJacOperator{eltype(u)}(f, u, args...; kwargs...)
@@ -94,8 +94,8 @@ function Base.:*(L::VecJacOperator, x::AbstractVector)
 end
 
 function LinearAlgebra.mul!(du::AbstractVector,
-                            L::VecJacOperator,
-                            x::AbstractVector)
+        L::VecJacOperator,
+        x::AbstractVector)
     du = reshape(du, size(L.u))
     let p = L.p, t = L.t
         if L.cache1 === nothing
@@ -109,16 +109,16 @@ function LinearAlgebra.mul!(du::AbstractVector,
             else
                 if hasmethod(L.f, typeof.((du, L.u, L.p, L.t)))
                     num_vecjac!(du,
-                                (_du, _u) -> L.f(_du, _u, p, t),
-                                L.u,
-                                x;
-                                compute_f0 = true)
+                        (_du, _u) -> L.f(_du, _u, p, t),
+                        L.u,
+                        x;
+                        compute_f0 = true)
                 else
                     num_vecjac!(du,
-                                _u -> L.f(_u, p, t),
-                                L.u,
-                                x;
-                                compute_f0 = true)
+                        _u -> L.f(_u, p, t),
+                        L.u,
+                        x;
+                        compute_f0 = true)
                 end
             end
         else
@@ -126,36 +126,36 @@ function LinearAlgebra.mul!(du::AbstractVector,
                 # For autodiff prefer non-inplace function
                 if hasmethod(L.f, typeof.((L.u, L.p, L.t)))
                     auto_vecjac!(du,
-                                 _u -> L.f(_u, p, t),
-                                 L.u,
-                                 x,
-                                 L.cache1,
-                                 L.cache2)
+                        _u -> L.f(_u, p, t),
+                        L.u,
+                        x,
+                        L.cache1,
+                        L.cache2)
                 else
                     auto_vecjac!(du,
-                                 (_du, _u) -> L.f(_du, _u, p, t),
-                                 L.u,
-                                 x,
-                                 L.cache1,
-                                 L.cache2)
+                        (_du, _u) -> L.f(_du, _u, p, t),
+                        L.u,
+                        x,
+                        L.cache1,
+                        L.cache2)
                 end
             else
                 if hasmethod(L.f, typeof.((du, L.u, L.p, L.t)))
                     num_vecjac!(du,
-                                (_du, _u) -> L.f(_du, _u, p, t),
-                                L.u,
-                                x,
-                                L.cache1,
-                                L.cache2;
-                                compute_f0 = true)
+                        (_du, _u) -> L.f(_du, _u, p, t),
+                        L.u,
+                        x,
+                        L.cache1,
+                        L.cache2;
+                        compute_f0 = true)
                 else
                     num_vecjac!(du,
-                                _u -> L.f(_u, p, t),
-                                L.u,
-                                x,
-                                L.cache1,
-                                L.cache2;
-                                compute_f0 = true)
+                        _u -> L.f(_u, p, t),
+                        L.u,
+                        x,
+                        L.cache1,
+                        L.cache2;
+                        compute_f0 = true)
                 end
             end
         end
